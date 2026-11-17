@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getApp } from "@/lib/octokit/app";
-import { JSDOM } from "jsdom";
+import { parseHTML } from "linkedom";
 import type { Config } from "svgo";
 import { optimize } from "svgo";
 import XYChart from "@/lib/shared/packages/xy-chart";
@@ -71,14 +71,12 @@ export async function GET(request: NextRequest) {
       logoUrl,
     };
 
-    const dom = new JSDOM(`<!DOCTYPE html><body></body>`);
-    const body = dom.window.document.querySelector("body");
-    const svg = dom.window.document.createElement(
-      "svg",
-    ) as unknown as SVGSVGElement;
+    const { document } = parseHTML(`<!DOCTYPE html><body></body>`);
+    const body = document.querySelector("body");
+    const svg = document.createElement("svg") as unknown as SVGSVGElement;
 
-    if (!dom || !body || !svg) {
-      throw new Error("Failed to mock dom with JSDOM");
+    if (!body || !svg) {
+      throw new Error("Failed to mock dom with linkedom");
     }
 
     body.append(svg);
