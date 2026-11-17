@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Area } from "recharts";
-import { ChartConfig, ChartTooltip } from "@/app/components/ui/chart";
+import type { ChartConfig } from "@/app/components/ui/chart";
+import { ChartTooltip } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
-import { RepoStarsData } from "@/lib/repo/stars";
+import type { RepoStarsData } from "@/lib/repo/stars";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { TrendIndicator } from "./trend-indicator";
 import { useDateRange } from "@/lib/contexts/date-range-context";
@@ -27,17 +34,24 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-
 export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
   const isOver40kStars = (starsData?.totalStars || 0) > 40000;
-  const [viewType, setViewType] = useState<"cumulative" | "daily">(isOver40kStars ? "cumulative" : "daily");
+  const [viewType, setViewType] = useState<"cumulative" | "daily">(
+    isOver40kStars ? "cumulative" : "daily",
+  );
   const { dateRange } = useDateRange();
 
   const data = useMemo(() => {
     if (!starsData) return [];
     return starsData.starsHistory.map((item, index, array) => {
       const stars = viewType === "cumulative" ? item.cumulative : item.daily;
-      const result: { date: string; stars: number; isEstimated?: boolean; solidStars?: number; dashedStars?: number } = {
+      const result: {
+        date: string;
+        stars: number;
+        isEstimated?: boolean;
+        solidStars?: number;
+        dashedStars?: number;
+      } = {
         date: item.date,
         stars,
         isEstimated: item.isEstimated,
@@ -77,11 +91,20 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
   const starsTrend = useMemo(() => {
     if (filteredData.length === 0 || viewType === "cumulative") return null;
     // Cast to the expected type for calculateTrendPercentage
-    const filteredDataForTrend = filteredData.map(item => ({ date: item.date, stars: item.stars }));
-    const dataForTrend = data.map(item => ({ date: item.date, stars: item.stars }));
-    return calculateTrendPercentage(filteredDataForTrend, dataForTrend, "stars");
+    const filteredDataForTrend = filteredData.map((item) => ({
+      date: item.date,
+      stars: item.stars,
+    }));
+    const dataForTrend = data.map((item) => ({
+      date: item.date,
+      stars: item.stars,
+    }));
+    return calculateTrendPercentage(
+      filteredDataForTrend,
+      dataForTrend,
+      "stars",
+    );
   }, [filteredData, data, viewType]);
-
 
   return (
     <Card className="w-full">
@@ -89,19 +112,28 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
         <div className="flex flex-col justify-center gap-1">
           <CardTitle>Stars Over Time</CardTitle>
           <CardDescription>
-            Repo star growth {isLoading ? "daily" : (viewType === "cumulative" ? "cumulative" : "daily")}
+            Repo star growth{" "}
+            {isLoading
+              ? "daily"
+              : viewType === "cumulative"
+                ? "cumulative"
+                : "daily"}
           </CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-xs text-muted-foreground">
-            {isLoading ? "Total Daily Stars" : (viewType === "cumulative" ? "Total Stars" : "Total Daily Stars")}
+            {isLoading
+              ? "Total Daily Stars"
+              : viewType === "cumulative"
+                ? "Total Stars"
+                : "Total Daily Stars"}
           </span>
           {isLoading ? (
             <Skeleton className="h-6 w-24" />
           ) : (
-            <div className="h-6 flex items-center gap-2">
+            <div className="flex h-6 items-center gap-2">
               <TrendIndicator trend={starsTrend} />
-              <span className="text-lg font-bold leading-none sm:text-2xl">
+              <span className="text-lg leading-none font-bold sm:text-2xl">
                 {total.toLocaleString()}
               </span>
             </div>
@@ -111,15 +143,24 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
       <CardContent className="pl-0">
         {isLoading || filteredData.length > 0 ? (
           <Chart
-            data={isLoading ? [] : filteredData.map(item => {
-              const result: { [key: string]: string | number; date: string } = { 
-                date: item.date, 
-                stars: item.stars
-              };
-              if (item.solidStars !== undefined) result.solidStars = item.solidStars;
-              if (item.dashedStars !== undefined) result.dashedStars = item.dashedStars;
-              return result;
-            })}
+            data={
+              isLoading
+                ? []
+                : filteredData.map((item) => {
+                    const result: {
+                      [key: string]: string | number;
+                      date: string;
+                    } = {
+                      date: item.date,
+                      stars: item.stars,
+                    };
+                    if (item.solidStars !== undefined)
+                      result.solidStars = item.solidStars;
+                    if (item.dashedStars !== undefined)
+                      result.dashedStars = item.dashedStars;
+                    return result;
+                  })
+            }
             chartConfig={chartConfig}
             className="h-64 w-full"
             isLoading={isLoading}
@@ -128,12 +169,17 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
                 cursor={false}
                 content={({ active, payload, label }) => {
                   // Find the original data point to get isEstimated info
-                  const originalDataPoint = filteredData.find(item => item.date === label);
-                  const enhancedPayload = payload?.map(p => ({
-                    ...p,
-                    payload: { ...p.payload, isEstimated: originalDataPoint?.isEstimated }
-                  }));
-                  
+                  const originalDataPoint = filteredData.find(
+                    (item) => item.date === label,
+                  );
+                  const enhancedPayload = payload?.map(
+                    (p: { dataKey?: unknown; value?: unknown }) => ({
+                      dataKey: typeof p.dataKey === "string" ? p.dataKey : "",
+                      value: typeof p.value === "number" ? p.value : undefined,
+                      payload: { isEstimated: originalDataPoint?.isEstimated },
+                    }),
+                  );
+
                   return (
                     <ChartCustomTooltip
                       active={active}
@@ -141,10 +187,10 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
                       label={label}
                       entries={[
                         {
-                          dataKey: 'stars',
-                          label: 'Stars',
-                          color: '#62C3F8'
-                        }
+                          dataKey: "stars",
+                          label: "Stars",
+                          color: "#62C3F8",
+                        },
                       ]}
                     />
                   );
@@ -194,11 +240,30 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
           <NoDataMessage dataType="stars" />
         )}
         {(isLoading || filteredData.length > 0) && !isOver40kStars && (
-          <div className="flex justify-center mt-6">
-            <Tabs value={viewType} onValueChange={(value) => setViewType(value as "cumulative" | "daily")}>
+          <div className="mt-6 flex justify-center">
+            <Tabs
+              value={viewType}
+              onValueChange={(value) =>
+                setViewType(value as "cumulative" | "daily")
+              }
+            >
               <TabsList>
-                <TabsTrigger value="daily" className={isLoading ? "cursor-not-allowed" : "cursor-pointer"}>Daily</TabsTrigger>
-                <TabsTrigger value="cumulative" className={isLoading ? "cursor-not-allowed" : "cursor-pointer"}>Cumulative</TabsTrigger>
+                <TabsTrigger
+                  value="daily"
+                  className={
+                    isLoading ? "cursor-not-allowed" : "cursor-pointer"
+                  }
+                >
+                  Daily
+                </TabsTrigger>
+                <TabsTrigger
+                  value="cumulative"
+                  className={
+                    isLoading ? "cursor-not-allowed" : "cursor-pointer"
+                  }
+                >
+                  Cumulative
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

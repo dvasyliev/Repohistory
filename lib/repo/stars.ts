@@ -1,4 +1,4 @@
-import { Octokit } from "octokit";
+import type { Octokit } from "octokit";
 import { unstable_cache } from "next/cache";
 
 type StargazerResponse = {
@@ -8,19 +8,28 @@ type StargazerResponse = {
   };
 };
 
-async function getStargazersPageUncached(octokit: Octokit, fullName: string, page: number): Promise<StargazerResponse> {
+async function getStargazersPageUncached(
+  octokit: Octokit,
+  fullName: string,
+  page: number,
+): Promise<StargazerResponse> {
   const response = await octokit.request(`GET /repos/${fullName}/stargazers`, {
     per_page: 100,
     page,
     headers: {
-      accept: 'application/vnd.github.v3.star+json',
+      accept: "application/vnd.github.v3.star+json",
     },
   });
 
   return response;
 }
 
-async function getStargazersPage(octokit: Octokit, fullName: string, page: number, isLastPage = false): Promise<StargazerResponse> {
+async function getStargazersPage(
+  octokit: Octokit,
+  fullName: string,
+  page: number,
+  isLastPage = false,
+): Promise<StargazerResponse> {
   // If this is not the last page, it will definitely have 100 stargazers - use cache
   if (!isLastPage) {
     const cachedFn = unstable_cache(
@@ -28,8 +37,8 @@ async function getStargazersPage(octokit: Octokit, fullName: string, page: numbe
       [fullName, page.toString()],
       {
         revalidate: 86400, // Cache for 24 hours
-        tags: [`stargazers-${fullName}`]
-      }
+        tags: [`stargazers-${fullName}`],
+      },
     );
     return await cachedFn();
   }
@@ -51,7 +60,7 @@ export interface RepoStarsData {
 
 export async function getRepoStars(
   octokit: Octokit,
-  repo: { fullName: string; stargazersCount: number }
+  repo: { fullName: string; stargazersCount: number },
 ): Promise<RepoStarsData> {
   try {
     const totalPages = Math.ceil(repo.stargazersCount / 100);
@@ -60,17 +69,22 @@ export async function getRepoStars(
     const fetchPromises: Promise<StargazerResponse>[] = [];
     for (let page = 1; page <= pagesToFetch; page += 1) {
       const isLastPage = page === pagesToFetch;
-      fetchPromises.push(getStargazersPage(octokit, repo.fullName, page, isLastPage));
+      fetchPromises.push(
+        getStargazersPage(octokit, repo.fullName, page, isLastPage),
+      );
     }
 
     const responses = await Promise.all(fetchPromises);
     const stargazers: Array<{ starred_at: string }> = [];
 
-    responses.forEach(response => {
+    responses.forEach((response) => {
       stargazers.push(...response.data);
     });
 
-    const { starsHistory, hasEstimatedData } = processStarsDataFull(stargazers, repo);
+    const { starsHistory, hasEstimatedData } = processStarsDataFull(
+      stargazers,
+      repo,
+    );
 
     return {
       totalStars: repo.stargazersCount,
@@ -89,13 +103,18 @@ export async function getRepoStars(
 
 export async function getRepoStarsChart(
   octokit: Octokit,
-  repo: { fullName: string; stargazersCount: number }
+  repo: { fullName: string; stargazersCount: number },
 ): Promise<RepoStarsData> {
   try {
     const maxRequestAmount = 15;
-    const initialResponse = await getStargazersPage(octokit, repo.fullName, 1, true); // First page in chart might be last
+    const initialResponse = await getStargazersPage(
+      octokit,
+      repo.fullName,
+      1,
+      true,
+    ); // First page in chart might be last
 
-    const headerLink = initialResponse.headers.link || '';
+    const headerLink = initialResponse.headers.link || "";
     let pageCount = 1;
     const regResult = /next.*&page=(\d*).*last/.exec(headerLink);
 
@@ -123,13 +142,20 @@ export async function getRepoStarsChart(
     const fetchPromises: Promise<StargazerResponse>[] = [];
     for (const page of requestPages) {
       const isLastPage = page === Math.max(...requestPages);
-      fetchPromises.push(getStargazersPage(octokit, repo.fullName, page, isLastPage));
+      fetchPromises.push(
+        getStargazersPage(octokit, repo.fullName, page, isLastPage),
+      );
     }
 
     const responses = await Promise.all(fetchPromises);
-    const responseData = responses.map(response => response.data);
+    const responseData = responses.map((response) => response.data);
 
-    const { starsHistory, hasEstimatedData } = processStarsDataSampled(responseData, repo, requestPages, pageCount <= maxRequestAmount);
+    const { starsHistory, hasEstimatedData } = processStarsDataSampled(
+      responseData,
+      repo,
+      requestPages,
+      pageCount <= maxRequestAmount,
+    );
 
     return {
       totalStars: repo.stargazersCount,
@@ -146,47 +172,64 @@ export async function getRepoStarsChart(
   }
 }
 
-function processStarsDataFull(stargazers: Array<{ starred_at?: string }>, repo: { stargazersCount: number }) {
+function processStarsDataFull(
+  stargazers: Array<{ starred_at?: string }>,
+  repo: { stargazersCount: number },
+) {
   const dailyStars = groupStargazersByDate(stargazers);
   const sortedDates = Object.keys(dailyStars).sort();
-  
+
   if (sortedDates.length === 0) {
     return { starsHistory: [], hasEstimatedData: false };
   }
 
   const completeData = fillMissingDates(dailyStars, sortedDates);
   const hasEstimatedData = repo.stargazersCount > 40000;
-  
+
   if (hasEstimatedData) {
-    interpolateMissingStars(completeData, dailyStars, sortedDates, repo.stargazersCount);
+    interpolateMissingStars(
+      completeData,
+      dailyStars,
+      sortedDates,
+      repo.stargazersCount,
+    );
   }
 
   return { starsHistory: completeData, hasEstimatedData };
 }
 
-function groupStargazersByDate(stargazers: Array<{ starred_at?: string }>): Record<string, number> {
+function groupStargazersByDate(
+  stargazers: Array<{ starred_at?: string }>,
+): Record<string, number> {
   const dailyStars: Record<string, number> = {};
-  
+
   stargazers.forEach(({ starred_at }) => {
     if (!starred_at) return;
-    
-    const date = new Date(starred_at).toISOString().split('T')[0];
+
+    const date = new Date(starred_at).toISOString().split("T")[0];
     dailyStars[date] = (dailyStars[date] || 0) + 1;
   });
-  
+
   return dailyStars;
 }
 
-function fillMissingDates(dailyStars: Record<string, number>, sortedDates: string[]) {
-  const today = new Date().toISOString().split('T')[0];
+function fillMissingDates(
+  dailyStars: Record<string, number>,
+  sortedDates: string[],
+) {
+  const today = new Date().toISOString().split("T")[0];
   const startDate = new Date(sortedDates[0]);
   startDate.setDate(startDate.getDate() - 1);
-  
+
   const completeData = [];
   let cumulative = 0;
 
-  for (let d = new Date(startDate); d.toISOString().split('T')[0] <= today; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+  for (
+    let d = new Date(startDate);
+    d.toISOString().split("T")[0] <= today;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const dateStr = d.toISOString().split("T")[0];
     const daily = dailyStars[dateStr] || 0;
     cumulative += daily;
 
@@ -197,38 +240,53 @@ function fillMissingDates(dailyStars: Record<string, number>, sortedDates: strin
       isEstimated: false,
     });
   }
-  
+
   return completeData;
 }
 
 function interpolateMissingStars(
-  completeData: Array<{ date: string; daily: number; cumulative: number; isEstimated: boolean }>,
+  completeData: Array<{
+    date: string;
+    daily: number;
+    cumulative: number;
+    isEstimated: boolean;
+  }>,
   dailyStars: Record<string, number>,
   sortedDates: string[],
-  totalStars: number
+  totalStars: number,
 ) {
   const lastStarDate = sortedDates[sortedDates.length - 1];
-  const actualStarsCount = Object.values(dailyStars).reduce((sum, count) => sum + count, 0);
+  const actualStarsCount = Object.values(dailyStars).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const missingStars = totalStars - actualStarsCount;
-  
+
   if (missingStars <= 0) return;
-  
+
   const lastStarDateObj = new Date(lastStarDate);
-  const estimatedDays = completeData.filter(item => new Date(item.date) > lastStarDateObj);
-  
+  const estimatedDays = completeData.filter(
+    (item) => new Date(item.date) > lastStarDateObj,
+  );
+
   if (estimatedDays.length === 0) return;
-  
+
   distributeStarsEvenly(estimatedDays, missingStars);
   recalculateCumulativeValues(completeData, totalStars);
 }
 
 function distributeStarsEvenly(
-  days: Array<{ date: string; daily: number; cumulative: number; isEstimated: boolean }>,
-  totalStars: number
+  days: Array<{
+    date: string;
+    daily: number;
+    cumulative: number;
+    isEstimated: boolean;
+  }>,
+  totalStars: number,
 ) {
   const baseStarsPerDay = Math.floor(totalStars / days.length);
   const remainder = totalStars % days.length;
-  
+
   days.forEach((day, index) => {
     day.isEstimated = true;
     day.daily += baseStarsPerDay + (index < remainder ? 1 : 0);
@@ -236,14 +294,20 @@ function distributeStarsEvenly(
 }
 
 function recalculateCumulativeValues(
-  completeData: Array<{ date: string; daily: number; cumulative: number; isEstimated: boolean }>,
-  totalStars: number
+  completeData: Array<{
+    date: string;
+    daily: number;
+    cumulative: number;
+    isEstimated: boolean;
+  }>,
+  totalStars: number,
 ) {
   let runningTotal = 0;
-  
+
   completeData.forEach((item, index) => {
     runningTotal += item.daily;
-    item.cumulative = index === completeData.length - 1 ? totalStars : runningTotal;
+    item.cumulative =
+      index === completeData.length - 1 ? totalStars : runningTotal;
   });
 }
 
@@ -251,15 +315,15 @@ function processStarsDataSampled(
   responses: Array<Array<{ starred_at?: string }>>,
   repo: { stargazersCount: number },
   requestPages: number[],
-  hasFullData: boolean
+  hasFullData: boolean,
 ) {
   const starRecordsMap: Map<string, number> = new Map();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   let hasEstimatedData = false;
 
   if (hasFullData) {
     const allStargazers: Array<{ starred_at?: string }> = [];
-    responses.forEach(response => {
+    responses.forEach((response) => {
       allStargazers.push(...response);
     });
 
@@ -269,7 +333,7 @@ function processStarsDataSampled(
     for (let i = 0; i < allStargazers.length; i += sampleStep) {
       const stargazer = allStargazers[i];
       if (stargazer.starred_at) {
-        const date = new Date(stargazer.starred_at).toISOString().split('T')[0];
+        const date = new Date(stargazer.starred_at).toISOString().split("T")[0];
         starRecordsMap.set(date, i + 1);
       }
     }
@@ -281,7 +345,9 @@ function processStarsDataSampled(
       if (response.length > 0) {
         const firstStargazer = response[0];
         if (firstStargazer.starred_at) {
-          const date = new Date(firstStargazer.starred_at).toISOString().split('T')[0];
+          const date = new Date(firstStargazer.starred_at)
+            .toISOString()
+            .split("T")[0];
           const pageNumber = requestPages[index];
           const estimatedStarCount = perPage * (pageNumber - 1);
           starRecordsMap.set(date, estimatedStarCount);
@@ -292,9 +358,14 @@ function processStarsDataSampled(
 
   starRecordsMap.set(today, repo.stargazersCount);
 
-  const starRecords: Array<{ date: string; cumulative: number; daily: number; isEstimated?: boolean }> = [];
-  const sortedEntries = Array.from(starRecordsMap.entries()).sort((a, b) =>
-    new Date(a[0]).getTime() - new Date(b[0]).getTime()
+  const starRecords: Array<{
+    date: string;
+    cumulative: number;
+    daily: number;
+    isEstimated?: boolean;
+  }> = [];
+  const sortedEntries = Array.from(starRecordsMap.entries()).sort(
+    (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime(),
   );
 
   for (let i = 0; i < sortedEntries.length; i++) {

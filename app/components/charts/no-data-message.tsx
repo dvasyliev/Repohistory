@@ -13,12 +13,12 @@ export function NoDataMessage({ dataType }: NoDataMessageProps) {
     if (selectedPeriod === "all") {
       return `No ${dataType} available`;
     }
-    
+
     return `No ${dataType} over the past ${selectedPeriod} days`;
   };
 
   return (
-    <div className="flex items-center justify-center h-64 text-muted-foreground">
+    <div className="flex h-64 items-center justify-center text-muted-foreground">
       {getMessage()}
     </div>
   );

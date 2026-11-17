@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Button } from "@/app/components/ui/button";
 import { GitHub } from "@/app/components/icons";
@@ -13,14 +13,10 @@ export default function SignInButton() {
     <Button
       onClick={() => {
         setIsLoading(true);
-        signin()
-      }}>
-      {
-        isLoading ?
-          <Loader className="animate-spin" />
-          :
-          <GitHub />
-      }
+        void signin();
+      }}
+    >
+      {isLoading ? <Loader className="animate-spin" /> : <GitHub />}
       Continue with GitHub
     </Button>
   );

@@ -4,9 +4,9 @@ import { SetupActionToast } from "@/app/components/setup-action-toast";
 import { DashboardHeader } from "@/app/components/repo/dashboard-header";
 import DashboardContent from "@/app/components/dashboard-content";
 
-export default async function Home() {
+export default function Home() {
   return (
-    <div className="container flex flex-col gap-4 mx-auto p-4 pt-6">
+    <div className="container mx-auto flex flex-col gap-4 p-4 pt-6">
       <Suspense>
         <DashboardHeader />
       </Suspense>

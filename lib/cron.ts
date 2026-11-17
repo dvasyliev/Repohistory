@@ -1,11 +1,11 @@
-import '@/lib/env-config'
-import { app } from '@/lib/octokit/app';
-import { updateTraffic } from './update-traffic';
+import "@/lib/env-config";
+import { app } from "@/lib/octokit/app";
+import { updateTraffic } from "./update-traffic";
 
-app.eachInstallation(({ installation }) => {
+await app.eachInstallation(async ({ installation }) => {
   if (installation.suspended_at) {
-    return
+    return;
   }
 
-  updateTraffic(installation.id)
+  await updateTraffic(installation.id);
 });

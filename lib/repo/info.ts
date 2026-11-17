@@ -1,9 +1,9 @@
-import { Octokit } from "octokit";
+import type { Octokit } from "octokit";
 
 export async function getRepoInfo(
   octokit: Octokit,
   owner: string,
-  repo: string
+  repo: string,
 ) {
   const { data } = await octokit.rest.repos.get({
     owner,

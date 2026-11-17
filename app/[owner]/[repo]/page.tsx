@@ -1,7 +1,14 @@
 import { Suspense } from "react";
 import { DateRangeProvider } from "@/lib/contexts/date-range-context";
 import type { Metadata } from "next";
-import { StarsChartWrapper, ViewChartWrapper, CloneChartWrapper, ReferrersChartWrapper, PopularContentChartWrapper, ReleaseChartWrapper } from "@/app/components/charts/chart-wrappers";
+import {
+  StarsChartWrapper,
+  ViewChartWrapper,
+  CloneChartWrapper,
+  ReferrersChartWrapper,
+  PopularContentChartWrapper,
+  ReleaseChartWrapper,
+} from "@/app/components/charts/chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
 import { getRepoInfo } from "@/lib/repo/info";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
@@ -20,7 +27,9 @@ interface PageProps {
   }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { owner, repo } = await params;
 
   return {
@@ -31,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function RepoPage({ params }: PageProps) {
   const { owner, repo } = await params;
 
-  if (owner === 'icons') {
+  if (owner === "icons") {
     return;
   }
 
@@ -42,23 +51,42 @@ export default async function RepoPage({ params }: PageProps) {
 
   return (
     <DateRangeProvider fullName={repoInfo.full_name}>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <Navbar repoInfo={repoInfo} />
-        <div className="container mx-auto p-4 sm:p-10 space-y-6">
+        <div className="container mx-auto space-y-6 p-4 sm:p-10">
           <Suspense fallback={<StarsChart isLoading />}>
-            <StarsChartWrapper fullName={repoInfo.full_name} stargazersCount={repoInfo.stargazers_count} />
+            <StarsChartWrapper
+              fullName={repoInfo.full_name}
+              stargazersCount={repoInfo.stargazers_count}
+            />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
-            <ViewChartWrapper fullName={fullName} repoId={repoInfo.id} supabase={supabase} />
+            <ViewChartWrapper
+              fullName={fullName}
+              repoId={repoInfo.id}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<CloneChart isLoading />}>
-            <CloneChartWrapper fullName={fullName} repoId={repoInfo.id} supabase={supabase} />
+            <CloneChartWrapper
+              fullName={fullName}
+              repoId={repoInfo.id}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<ReferrersChart isLoading />}>
-            <ReferrersChartWrapper fullName={fullName} repoId={repoInfo.id} supabase={supabase} />
+            <ReferrersChartWrapper
+              fullName={fullName}
+              repoId={repoInfo.id}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<PopularContentChart isLoading />}>
-            <PopularContentChartWrapper fullName={fullName} repoId={repoInfo.id} supabase={supabase} />
+            <PopularContentChartWrapper
+              fullName={fullName}
+              repoId={repoInfo.id}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<ReleaseChart isLoading />}>
             <ReleaseChartWrapper fullName={fullName} />

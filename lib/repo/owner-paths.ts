@@ -1,58 +1,82 @@
-import { Octokit } from "octokit";
-import { Repo } from "@/lib/types";
+import type { Octokit } from "octokit";
+import type { Repo } from "@/lib/types";
 import { getRepoPaths } from "./paths";
-import { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
 
 export async function getOwnerPaths(
   octokit: Octokit,
   supabase: Awaited<ReturnType<typeof createClient>>,
-  repos: Repo[]
-): Promise<{ paths: Array<{ path: string; title: string; data: Array<{ timestamp: string; count: number; uniques: number }> }> }> {
-  const repoPathsPromises = repos.map(repo => 
-    getRepoPaths(octokit, supabase, repo.full_name, repo.id)
+  repos: Repo[],
+): Promise<{
+  paths: Array<{
+    path: string;
+    title: string;
+    data: Array<{ timestamp: string; count: number; uniques: number }>;
+  }>;
+}> {
+  const repoPathsPromises = repos.map((repo) =>
+    getRepoPaths(octokit, supabase, repo.full_name, repo.id),
   );
 
   const allRepoPaths = await Promise.all(repoPathsPromises);
-  
+
   const aggregatedPaths = aggregatePathsHistory(allRepoPaths, repos);
 
   return {
-    paths: aggregatedPaths
+    paths: aggregatedPaths,
   };
 }
 
 function aggregatePathsHistory(
-  allRepoPaths: Array<{ paths: Array<{ path: string; title: string; data: Array<{ timestamp: string; count: number; uniques: number }> }> }>,
-  repos: Repo[]
-): Array<{ path: string; title: string; data: Array<{ timestamp: string; count: number; uniques: number }> }> {
-  const pathMap = new Map<string, { title: string; repoCount: Set<string>; data: Map<string, { count: number; uniques: number }> }>();
+  allRepoPaths: Array<{
+    paths: Array<{
+      path: string;
+      title: string;
+      data: Array<{ timestamp: string; count: number; uniques: number }>;
+    }>;
+  }>,
+  repos: Repo[],
+): Array<{
+  path: string;
+  title: string;
+  data: Array<{ timestamp: string; count: number; uniques: number }>;
+}> {
+  const pathMap = new Map<
+    string,
+    {
+      title: string;
+      repoCount: Set<string>;
+      data: Map<string, { count: number; uniques: number }>;
+    }
+  >();
 
   // Aggregate data from all repos
   allRepoPaths.forEach((repoPaths, repoIndex) => {
     const repoName = repos[repoIndex].full_name;
-    
+
     repoPaths.paths.forEach(({ path, data }) => {
       // Create a composite key that includes repo info for better aggregation
-      const repoNameOnly = repoName.split('/')[1]; // Get just the repo name without owner
-      const displayPath = path === '/' ? repoNameOnly : `${repoNameOnly}${path}`;
-      
+      const repoNameOnly = repoName.split("/")[1]; // Get just the repo name without owner
+      const displayPath =
+        path === "/" ? repoNameOnly : `${repoNameOnly}${path}`;
+
       if (!pathMap.has(displayPath)) {
-        pathMap.set(displayPath, { 
-          title: displayPath, 
+        pathMap.set(displayPath, {
+          title: displayPath,
           repoCount: new Set(),
-          data: new Map() 
+          data: new Map(),
         });
       }
-      
+
       const pathInfo = pathMap.get(displayPath)!;
       pathInfo.repoCount.add(repoName);
-      
+
       data.forEach(({ timestamp, count, uniques }) => {
         const existing = pathInfo.data.get(timestamp);
         if (existing) {
           pathInfo.data.set(timestamp, {
             count: existing.count + count,
-            uniques: existing.uniques + uniques
+            uniques: existing.uniques + uniques,
           });
         } else {
           pathInfo.data.set(timestamp, { count, uniques });
@@ -63,20 +87,20 @@ function aggregatePathsHistory(
 
   // Convert back to array format
   const paths = Array.from(pathMap.entries()).map(([displayPath, pathInfo]) => {
-    const sortedEntries = Array.from(pathInfo.data.entries()).sort((a, b) => 
-      a[0].localeCompare(b[0])
+    const sortedEntries = Array.from(pathInfo.data.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0]),
     );
 
     const data = sortedEntries.map(([timestamp, { count, uniques }]) => ({
       timestamp,
       count,
-      uniques
+      uniques,
     }));
 
-    return { 
+    return {
       path: displayPath,
       title: pathInfo.title,
-      data 
+      data,
     };
   });
 

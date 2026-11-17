@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/app/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,13 +21,17 @@ import { signout } from "@/lib/actions/auth";
 
 export async function DropdownWrapper() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={user?.user_metadata?.avatar_url} />
+          <AvatarImage
+            src={user?.user_metadata?.avatar_url as string | undefined}
+          />
           <AvatarFallback>
             {user?.email?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
@@ -42,7 +50,7 @@ export async function DropdownWrapper() {
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <MessageSquare className="stroke-muted-foreground mr-4 h-4 w-4" />
+            <MessageSquare className="mr-4 h-4 w-4 stroke-muted-foreground" />
             Feedback
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
@@ -71,7 +79,7 @@ export async function DropdownWrapper() {
           </DropdownMenuPortal>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signout}>
+        <DropdownMenuItem onClick={() => void signout()}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>

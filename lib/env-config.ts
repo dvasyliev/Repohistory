@@ -1,4 +1,4 @@
-import nextEnv from '@next/env'
+import nextEnv from "@next/env";
 
-const projectDir = process.cwd()
-nextEnv.loadEnvConfig(projectDir)
+const projectDir = process.cwd();
+nextEnv.loadEnvConfig(projectDir);

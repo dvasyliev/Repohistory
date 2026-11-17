@@ -1,13 +1,19 @@
 "use client";
 
-import { ReactNode } from "react";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/app/components/ui/chart";
+import type { ReactNode } from "react";
+import type { ChartConfig } from "@/app/components/ui/chart";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+} from "@/app/components/ui/chart";
 import { ComposedChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { Button } from "@/app/components/ui/button";
 import { Loader } from "lucide-react";
 
 interface ChartProps {
-  data: Array<{ date: string;[key: string]: string | number }>;
+  data: Array<{ date: string; [key: string]: string | number }>;
   chartConfig: ChartConfig;
   children: ReactNode;
   className?: string;
@@ -24,7 +30,11 @@ interface CustomLegendContentProps {
   onLegendClick: (dataKey: string) => void;
 }
 
-function CustomLegendContent({ chartConfig, hiddenSeries, onLegendClick }: CustomLegendContentProps) {
+function CustomLegendContent({
+  chartConfig,
+  hiddenSeries,
+  onLegendClick,
+}: CustomLegendContentProps) {
   const legendEntries = Object.entries(chartConfig)
     .filter(([key]) => key !== "visitors")
     .map(([dataKey, config]) => ({
@@ -36,7 +46,7 @@ function CustomLegendContent({ chartConfig, hiddenSeries, onLegendClick }: Custo
   if (legendEntries.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 justify-center pt-3">
+    <div className="flex flex-wrap justify-center gap-2 pt-3">
       {legendEntries.map((entry) => {
         const isHidden = hiddenSeries.includes(entry.dataKey);
 
@@ -45,11 +55,11 @@ function CustomLegendContent({ chartConfig, hiddenSeries, onLegendClick }: Custo
             key={entry.dataKey}
             variant="outline"
             size="sm"
-            className={`rounded-full cursor-pointer select-none hover:opacity-80 gap-1.5 ${isHidden ? "opacity-50" : "opacity-100"}`}
+            className={`cursor-pointer gap-1.5 rounded-full select-none hover:opacity-80 ${isHidden ? "opacity-50" : "opacity-100"}`}
             onClick={() => onLegendClick(entry.dataKey)}
           >
             <div
-              className="w-2 h-2 rounded-full"
+              className="h-2 w-2 rounded-full"
               style={{
                 backgroundColor: entry.color,
               }}
@@ -71,18 +81,20 @@ export function Chart({
   hiddenSeries = [],
   customTooltip,
   hideZeroValues = false,
-  isLoading = false
+  isLoading = false,
 }: ChartProps) {
-
   return (
     <div className={`relative ${className}`}>
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
           <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       )}
       <ChartContainer config={chartConfig} className="h-full w-full">
-        <div className="h-full" style={{ touchAction: 'none', userSelect: 'none' }}>
+        <div
+          className="h-full"
+          style={{ touchAction: "none", userSelect: "none" }}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}
@@ -97,8 +109,8 @@ export function Chart({
                 axisLine={false}
                 tickMargin={8}
                 minTickGap={32}
-                style={{ fontSize: '12px', userSelect: 'none' }}
-                tickFormatter={(value) => {
+                style={{ fontSize: "12px", userSelect: "none" }}
+                tickFormatter={(value: string) => {
                   const date = new Date(value);
                   return date.toLocaleDateString("en-US", {
                     month: "short",
@@ -110,15 +122,22 @@ export function Chart({
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                style={{ fontSize: '12px', userSelect: 'none' }}
+                style={{ fontSize: "12px", userSelect: "none" }}
                 allowDecimals={false}
-                tickFormatter={(value) => value.toLocaleString()}
+                tickFormatter={(value: number) => value.toLocaleString()}
               />
               {customTooltip || (
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent indicator="line" hideZeroValues={hideZeroValues} />}
-                  labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                  content={
+                    <ChartTooltipContent
+                      indicator="line"
+                      hideZeroValues={hideZeroValues}
+                    />
+                  }
+                  labelFormatter={(value: string) =>
+                    new Date(value).toLocaleDateString()
+                  }
                 />
               )}
               {children}

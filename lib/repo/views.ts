@@ -1,60 +1,87 @@
-import { Octokit } from "octokit";
-import { createClient } from "@/lib/supabase/server";
+import type { Octokit } from "octokit";
+import type { createClient } from "@/lib/supabase/server";
 
 export async function getRepoViews(
   octokit: Octokit,
   supabase: Awaited<ReturnType<typeof createClient>>,
   fullName: string,
-  repoId: number
-): Promise<{ count: number; uniques: number; views: Array<{ timestamp: string; count: number; uniques: number }> }> {
+  repoId: number,
+): Promise<{
+  count: number;
+  uniques: number;
+  views: Array<{ timestamp: string; count: number; uniques: number }>;
+}> {
   try {
     const [owner, repo] = fullName.split("/");
 
     // Fetch data from both sources in parallel
     const [supabaseResult, githubResult] = await Promise.allSettled([
       supabase
-        .from('views')
-        .select('date, total, unique')
-        .eq('repo_id', repoId)
-        .order('date', { ascending: true }),
-      octokit.rest.repos.getViews({ owner, repo })
+        .from("views")
+        .select("date, total, unique")
+        .eq("repo_id", repoId)
+        .order("date", { ascending: true })
+        .overrideTypes<
+          Array<{ date: string; total: number; unique: number }>,
+          { merge: false }
+        >(),
+      octokit.rest.repos.getViews({ owner, repo }),
     ]);
 
     // Process Supabase data
-    const supabaseData = supabaseResult.status === 'fulfilled' && supabaseResult.value.data || [];
+    const supabaseData =
+      (supabaseResult.status === "fulfilled" && supabaseResult.value.data) ||
+      [];
 
-    if (supabaseResult.status === 'rejected') {
-      console.error("Error fetching views from Supabase:", supabaseResult.reason);
+    if (supabaseResult.status === "rejected") {
+      console.error(
+        "Error fetching views from Supabase:",
+        supabaseResult.reason,
+      );
     }
 
     // Process GitHub data
-    const githubData = githubResult.status === 'fulfilled'
-      ? githubResult.value.data.views?.map(item => ({
-        date: item.timestamp.split('T')[0],
-        count: item.count,
-        uniques: item.uniques,
-      })) || []
-      : [];
+    const githubData =
+      githubResult.status === "fulfilled"
+        ? githubResult.value.data.views?.map((item) => ({
+            date: item.timestamp.split("T")[0],
+            count: item.count,
+            uniques: item.uniques,
+          })) || []
+        : [];
 
-    if (githubResult.status === 'rejected') {
-      console.error("Error fetching views from GitHub API:", githubResult.reason);
+    if (githubResult.status === "rejected") {
+      console.error(
+        "Error fetching views from GitHub API:",
+        githubResult.reason,
+      );
     }
 
     // Merge data: GitHub overrides Supabase for matching dates
     const dataMap = new Map(
-      supabaseData.map(item => [
+      supabaseData.map((item) => [
         item.date,
-        { timestamp: item.date, count: item.total || 0, uniques: item.unique || 0 }
-      ])
+        {
+          timestamp: item.date,
+          count: item.total || 0,
+          uniques: item.unique || 0,
+        },
+      ]),
     );
 
     // Override with GitHub data (more precise for recent dates)
-    githubData.forEach(item => {
-      dataMap.set(item.date, { timestamp: item.date, count: item.count, uniques: item.uniques });
+    githubData.forEach((item) => {
+      dataMap.set(item.date, {
+        timestamp: item.date,
+        count: item.count,
+        uniques: item.uniques,
+      });
     });
 
     // Fill missing dates with 0 values
-    const sortedViews = Array.from(dataMap.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    const sortedViews = Array.from(dataMap.values()).sort((a, b) =>
+      a.timestamp.localeCompare(b.timestamp),
+    );
     const views = [];
 
     if (sortedViews.length > 0) {
@@ -62,10 +89,16 @@ export async function getRepoViews(
       const endDate = new Date();
       endDate.setDate(endDate.getDate() - 1);
 
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateStr = d.toISOString().split("T")[0];
         const existingData = dataMap.get(dateStr);
-        views.push(existingData || { timestamp: dateStr, count: 0, uniques: 0 });
+        views.push(
+          existingData || { timestamp: dateStr, count: 0, uniques: 0 },
+        );
       }
     }
 

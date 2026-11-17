@@ -3,6 +3,7 @@
 ## Star History
 
 The code in the `/src/shared/` directory is adapted from the Star History project:
+
 - **Source**: https://github.com/star-history/star-history
 - **License**: MIT License
 

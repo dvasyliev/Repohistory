@@ -1,6 +1,12 @@
 import { Suspense } from "react";
 import { DateRangeProvider } from "@/lib/contexts/date-range-context";
-import { OwnerStarsChartWrapper, OwnerViewChartWrapper, OwnerCloneChartWrapper, OwnerReferrersChartWrapper, OwnerPopularContentChartWrapper } from "@/app/components/charts/owner-chart-wrappers";
+import {
+  OwnerStarsChartWrapper,
+  OwnerViewChartWrapper,
+  OwnerCloneChartWrapper,
+  OwnerReferrersChartWrapper,
+  OwnerPopularContentChartWrapper,
+} from "@/app/components/charts/owner-chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
 import { getRepos } from "@/lib/octokit/get-repos";
@@ -28,7 +34,10 @@ export default async function OwnerPage({ params }: PageProps) {
     redirect("/");
   }
 
-  const totalStars = ownerRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+  const totalStars = ownerRepos.reduce(
+    (sum, repo) => sum + repo.stargazers_count,
+    0,
+  );
   const ownerInfo = {
     name: owner,
     totalRepositories: ownerRepos.length,
@@ -39,23 +48,39 @@ export default async function OwnerPage({ params }: PageProps) {
 
   return (
     <DateRangeProvider fullName={owner}>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <Navbar ownerInfo={ownerInfo} />
-        <div className="container mx-auto p-4 sm:p-10 space-y-6">
+        <div className="container mx-auto space-y-6 p-4 sm:p-10">
           <Suspense fallback={<StarsChart isLoading />}>
             <OwnerStarsChartWrapper owner={owner} repos={ownerRepos} />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
-            <OwnerViewChartWrapper owner={owner} repos={ownerRepos} supabase={supabase} />
+            <OwnerViewChartWrapper
+              owner={owner}
+              repos={ownerRepos}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<CloneChart isLoading />}>
-            <OwnerCloneChartWrapper owner={owner} repos={ownerRepos} supabase={supabase} />
+            <OwnerCloneChartWrapper
+              owner={owner}
+              repos={ownerRepos}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<ReferrersChart isLoading />}>
-            <OwnerReferrersChartWrapper owner={owner} repos={ownerRepos} supabase={supabase} />
+            <OwnerReferrersChartWrapper
+              owner={owner}
+              repos={ownerRepos}
+              supabase={supabase}
+            />
           </Suspense>
           <Suspense fallback={<PopularContentChart isLoading />}>
-            <OwnerPopularContentChartWrapper owner={owner} repos={ownerRepos} supabase={supabase} />
+            <OwnerPopularContentChartWrapper
+              owner={owner}
+              repos={ownerRepos}
+              supabase={supabase}
+            />
           </Suspense>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader } from "@/app/components/ui/card";
 import { Skeleton } from "@/app/components/ui/skeleton";
 
-export function RepoCardSkeleton() {
+function RepoCardSkeleton() {
   return (
-    <Card className="h-52 gap-2 w-full">
+    <Card className="h-52 w-full gap-2">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <Skeleton className="h-7 w-48" />
         <div className="flex items-center gap-1">
@@ -38,7 +38,7 @@ export function RepoCardContentSkeleton() {
 
 export function RepoCardSkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 9 }).map((_, i) => (
         <RepoCardSkeleton key={i} />
       ))}

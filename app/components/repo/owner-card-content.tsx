@@ -1,9 +1,9 @@
-import { Repo } from "@/lib/types";
+import type { Repo } from "@/lib/types";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { RepoPreviewChart } from "./repo-preview-chart";
 import { TrendIndicator } from "@/app/components/charts/trend-indicator";
-import { Octokit } from "octokit";
+import type { Octokit } from "octokit";
 
 interface ViewData {
   date: string;
@@ -18,14 +18,15 @@ async function fetchRepoViews(repo: Repo, octokit: Octokit) {
   try {
     githubViews = await octokit.rest.repos.getViews({ owner, repo: repoName });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return [];
   }
 
-  const viewsData = githubViews.data.views?.map(item => ({
-    date: item.timestamp.split('T')[0],
-    total: item.count
-  })) || [];
+  const viewsData =
+    githubViews.data.views?.map((item) => ({
+      date: item.timestamp.split("T")[0],
+      total: item.count,
+    })) || [];
 
   const today = new Date();
   const complete14Days = [];
@@ -33,12 +34,12 @@ async function fetchRepoViews(repo: Repo, octokit: Octokit) {
   for (let i = 14; i >= 1; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = date.toISOString().split("T")[0];
 
-    const existingData = viewsData.find(item => item.date === dateStr);
+    const existingData = viewsData.find((item) => item.date === dateStr);
     complete14Days.push({
       date: dateStr,
-      total: existingData ? existingData.total : 0
+      total: existingData ? existingData.total : 0,
     });
   }
 
@@ -59,19 +60,17 @@ function aggregateViewData(allRepoViews: ViewData[][]): ViewData[] {
 
     aggregated.push({
       date,
-      total: totalViews
+      total: totalViews,
     });
   }
 
   return aggregated;
 }
 
-export async function OwnerCardContent({ repos }: {
-  repos: Repo[];
-}) {
+export async function OwnerCardContent({ repos }: { repos: Repo[] }) {
   const octokit = await getUserOctokit();
   const allRepoViews = await Promise.all(
-    repos.map(repo => fetchRepoViews(repo, octokit))
+    repos.map((repo) => fetchRepoViews(repo, octokit)),
   );
 
   const aggregatedViews = aggregateViewData(allRepoViews);
@@ -88,7 +87,7 @@ export async function OwnerCardContent({ repos }: {
 
   return (
     <>
-      <div className="h-24 w-full pointer-events-none">
+      <div className="pointer-events-none h-24 w-full">
         <RepoPreviewChart data={last7Days} />
       </div>
       <div className="flex items-center justify-between">

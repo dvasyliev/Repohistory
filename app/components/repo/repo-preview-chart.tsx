@@ -13,7 +13,11 @@ interface RepoPreviewChartProps {
 export function RepoPreviewChart({ data }: RepoPreviewChartProps) {
   const chartData = useMemo(() => {
     return data.map((item, index, array) => {
-      const result: { date: string; total: number; [key: string]: string | number } = {
+      const result: {
+        date: string;
+        total: number;
+        [key: string]: string | number;
+      } = {
         date: item.date,
         total: item.total,
       };

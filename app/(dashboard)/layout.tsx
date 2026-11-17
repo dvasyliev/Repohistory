@@ -1,6 +1,6 @@
 import { Navbar } from "@/app/components/layout/navbar";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -8,9 +8,7 @@ export default async function DashboardLayout({
   return (
     <>
       <Navbar />
-      <div className="w-full">
-        {children}
-      </div>
+      <div className="w-full">{children}</div>
     </>
   );
 }

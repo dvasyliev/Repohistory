@@ -1,7 +1,13 @@
 "use client";
 
 import { CalendarDays } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 
 interface DateRangePickerProps {

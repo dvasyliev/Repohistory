@@ -2,7 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { DateRangePicker } from "@/app/components/ui/date-range-picker";
 import { Button } from "@/app/components/ui/button";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/app/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/app/components/ui/dropdown-menu";
 import { MoreHorizontalIcon } from "lucide-react";
 import { DropdownWrapper } from "./dropdown-wrapper";
 import { Suspense } from "react";
@@ -27,9 +32,9 @@ interface NavbarProps {
 
 export function Navbar({ repoInfo, ownerInfo }: NavbarProps) {
   return (
-    <nav className="sticky top-0 z-50 h-16 border-b border-border bg-background/60 backdrop-blur-md backdrop-filter flex items-center justify-between px-4 sm:px-10">
+    <nav className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-background/60 px-4 backdrop-blur-md backdrop-filter sm:px-10">
       <div className="flex items-center gap-6">
-        <Link href="/" className="hover:opacity-80 transition-opacity">
+        <Link href="/" className="transition-opacity hover:opacity-80">
           <Image
             width={28}
             height={28}
@@ -39,24 +44,24 @@ export function Navbar({ repoInfo, ownerInfo }: NavbarProps) {
           />
         </Link>
         {repoInfo && (
-          <h1 className="text-md truncate max-w-xs font-semibold sm:font-bold hidden sm:block">
+          <h1 className="text-md hidden max-w-xs truncate font-semibold sm:block sm:font-bold">
             <Link
               href={`https://github.com/${repoInfo.full_name}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline decoration-1"
+              className="decoration-1 hover:underline"
             >
               {repoInfo.full_name}
             </Link>
           </h1>
         )}
         {ownerInfo && (
-          <h1 className="text-md truncate max-w-xs font-semibold sm:font-bold hidden sm:block">
+          <h1 className="text-md hidden max-w-xs truncate font-semibold sm:block sm:font-bold">
             <Link
               href={`https://github.com/${ownerInfo.name}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline decoration-1"
+              className="decoration-1 hover:underline"
             >
               {ownerInfo.name}
             </Link>
@@ -75,14 +80,17 @@ export function Navbar({ repoInfo, ownerInfo }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link target="_blank" href={`/star-history?owner=${repoInfo.full_name.split('/')[0]}&repo=${repoInfo.full_name.split('/')[1]}`}>
+                  <Link
+                    target="_blank"
+                    href={`/star-history?owner=${repoInfo.full_name.split("/")[0]}&repo=${repoInfo.full_name.split("/")[1]}`}
+                  >
                     Generate star history chart
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a
                     href={`/api/export/${repoInfo.id}?format=csv&repo=${encodeURIComponent(repoInfo.full_name)}`}
-                    download={`${repoInfo.full_name.replace('/', '-')}-data.zip`}
+                    download={`${repoInfo.full_name.replace("/", "-")}-data.zip`}
                   >
                     Export all data
                   </a>
@@ -91,11 +99,13 @@ export function Navbar({ repoInfo, ownerInfo }: NavbarProps) {
             </DropdownMenu>
           </div>
         )}
-        <Suspense fallback={
-          <Avatar>
-            <AvatarFallback />
-          </Avatar>
-        }>
+        <Suspense
+          fallback={
+            <Avatar>
+              <AvatarFallback />
+            </Avatar>
+          }
+        >
           <DropdownWrapper />
         </Suspense>
       </div>

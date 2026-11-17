@@ -1,7 +1,7 @@
 import { StarHistoryForm } from "./components/star-history-form";
 import { StarHistoryGenerator } from "./components/star-history-generator";
 import { BackgroundCharts } from "./components/background-charts";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 interface PageProps {
   searchParams: Promise<{
@@ -11,9 +11,10 @@ interface PageProps {
 }
 
 export const metadata: Metadata = {
-  title: 'GitHub Repo Star History Chart Generator | Repohistory',
-  description: 'Generate customizable star history charts for your GitHub repositories. Input the owner and repository name to visualize star growth over time. Perfect for showcasing project popularity in your README.',
-}
+  title: "GitHub Repo Star History Chart Generator | Repohistory",
+  description:
+    "Generate customizable star history charts for your GitHub repositories. Input the owner and repository name to visualize star growth over time. Perfect for showcasing project popularity in your README.",
+};
 
 export default async function StarHistoryPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -23,10 +24,12 @@ export default async function StarHistoryPage({ searchParams }: PageProps) {
 
   if (!fullName) {
     return (
-      <div className="relative h-dvh px-2 z-10 flex flex-col space-y-8 justify-center items-center">
+      <div className="relative z-10 flex h-dvh flex-col items-center justify-center space-y-8 px-2">
         <BackgroundCharts />
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold">Star History Chart Generator</h1>
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-semibold">
+            Star History Chart Generator
+          </h1>
           <p className="text-muted-foreground">
             Create customizable star history charts for your GitHub repo
           </p>
@@ -37,13 +40,14 @@ export default async function StarHistoryPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="container mx-auto flex items-center justify-center min-h-dvh py-8 px-4">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="container mx-auto flex min-h-dvh items-center justify-center px-4 py-8">
+      <div className="mx-auto max-w-5xl space-y-8">
         <div className="text-center">
-          <p className="text-muted-foreground text-sm">
-            Want to see more detail chart? <a
+          <p className="text-sm text-muted-foreground">
+            Want to see more detail chart?{" "}
+            <a
               href="https://repohistory.com"
-              className="underline hover:text-white transition-colors"
+              className="underline transition-colors hover:text-white"
             >
               Try Repohistory
             </a>

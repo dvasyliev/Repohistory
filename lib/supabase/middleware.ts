@@ -1,11 +1,11 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
-import { refreshProviderToken } from '@/lib/auth/refresh-token'
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { refreshProviderToken } from "@/lib/auth/refresh-token";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,20 +13,22 @@ export async function updateSession(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           supabaseResponse = NextResponse.next({
             request,
-          })
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+            supabaseResponse.cookies.set(name, value, options),
+          );
         },
       },
-    }
-  )
+    },
+  );
 
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
@@ -36,27 +38,31 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/signin') &&
-    !request.nextUrl.pathname.startsWith('/error')
+    !request.nextUrl.pathname.startsWith("/signin") &&
+    !request.nextUrl.pathname.startsWith("/error")
   ) {
     // no user, potentially respond by redirecting the user to the signin page
-    const url = request.nextUrl.clone()
-    url.pathname = '/signin'
-    const response = NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = "/signin";
+    const response = NextResponse.redirect(url);
 
     // Delete cookies by setting them with past expiration
-    response.cookies.set('provider_token', '', { expires: new Date(0) })
-    response.cookies.set('provider_refresh_token', '', { expires: new Date(0) })
+    response.cookies.set("provider_token", "", { expires: new Date(0) });
+    response.cookies.set("provider_refresh_token", "", {
+      expires: new Date(0),
+    });
 
-    return response
+    return response;
   }
 
-  let providerToken = request.cookies.get('provider_token')?.value;
-  const providerRefreshToken = request.cookies.get('provider_refresh_token')?.value;
+  let providerToken = request.cookies.get("provider_token")?.value;
+  const providerRefreshToken = request.cookies.get(
+    "provider_refresh_token",
+  )?.value;
 
   // no provider token but we can refresh it
   if (!providerToken && providerRefreshToken) {
@@ -68,24 +74,28 @@ export async function updateSession(request: NextRequest) {
       const rewriteResponse = NextResponse.rewrite(request.url, { request });
 
       // Copy existing cookies from supabaseResponse
-      supabaseResponse.cookies.getAll().forEach(cookie => {
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
         rewriteResponse.cookies.set(cookie.name, cookie.value, cookie);
       });
 
-      rewriteResponse.cookies.set('provider_token', tokenData.access_token, {
+      rewriteResponse.cookies.set("provider_token", tokenData.access_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 8 // 8 hours
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 8, // 8 hours
       });
 
       if (tokenData.refresh_token) {
-        rewriteResponse.cookies.set('provider_refresh_token', tokenData.refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 30 * 5 // 5 months
-        });
+        rewriteResponse.cookies.set(
+          "provider_refresh_token",
+          tokenData.refresh_token,
+          {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 30 * 5, // 5 months
+          },
+        );
       }
 
       return rewriteResponse;
@@ -95,22 +105,24 @@ export async function updateSession(request: NextRequest) {
   if (
     !providerToken &&
     !providerRefreshToken &&
-    !request.nextUrl.pathname.startsWith('/signin')
+    !request.nextUrl.pathname.startsWith("/signin")
   ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/signin'
-    const response = NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = "/signin";
+    const response = NextResponse.redirect(url);
 
-    response.cookies.set('provider_token', '', { expires: new Date(0) })
-    response.cookies.set('provider_refresh_token', '', { expires: new Date(0) })
+    response.cookies.set("provider_token", "", { expires: new Date(0) });
+    response.cookies.set("provider_refresh_token", "", {
+      expires: new Date(0),
+    });
 
-    return response
+    return response;
   }
 
-  if (providerToken && request.nextUrl.pathname.startsWith('/signin')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+  if (providerToken && request.nextUrl.pathname.startsWith("/signin")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -126,5 +138,5 @@ export async function updateSession(request: NextRequest) {
   // If this is not done, you may be causing the browser and server to go out
   // of sync and terminate the user's session prematurely!
 
-  return supabaseResponse
+  return supabaseResponse;
 }

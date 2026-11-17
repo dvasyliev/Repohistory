@@ -2,8 +2,14 @@
 
 import { useMemo } from "react";
 import { Line } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { ChartConfig } from "@/app/components/ui/chart";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
@@ -35,11 +41,15 @@ const COLORS = [
   "#6278f8",
 ];
 
-export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartProps) {
+export function ReferrersChart({
+  traffic,
+  isLoading = false,
+}: ReferrersChartProps) {
   const { dateRange } = useDateRange();
 
   const { data, chartConfig } = useMemo(() => {
-    if (!traffic || !traffic.referrers || !traffic.referrers.length) return { data: [], chartConfig: {} };
+    if (!traffic || !traffic.referrers || !traffic.referrers.length)
+      return { data: [], chartConfig: {} };
 
     // Use all referrers
     const topReferrers = traffic.referrers;
@@ -47,8 +57,8 @@ export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartPro
     // Create a map of dates to referrer data
     const dateMap = new Map<string, Record<string, number>>();
 
-    topReferrers.forEach(referrer => {
-      referrer.data.forEach(item => {
+    topReferrers.forEach((referrer) => {
+      referrer.data.forEach((item) => {
         if (!dateMap.has(item.timestamp)) {
           dateMap.set(item.timestamp, {});
         }
@@ -61,7 +71,7 @@ export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartPro
     const chartData = Array.from(dateMap.entries())
       .map(([date, referrers]) => ({
         date,
-        ...referrers
+        ...referrers,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -89,7 +99,6 @@ export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartPro
 
   const showHint = filteredData.length === 1;
 
-
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b">
@@ -100,7 +109,7 @@ export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartPro
           </CardDescription>
         </div>
         {showHint && (
-          <div className="hidden md:block text-sm text-muted-foreground">
+          <div className="hidden text-sm text-muted-foreground md:block">
             💡 Come back in a few days to see trends over time
           </div>
         )}
@@ -114,7 +123,7 @@ export function ReferrersChart({ traffic, isLoading = false }: ReferrersChartPro
             hideZeroValues
             isLoading={isLoading}
           >
-            {Object.keys(chartConfig).map(referrer => (
+            {Object.keys(chartConfig).map((referrer) => (
               <Line
                 isAnimationActive={false}
                 key={referrer}

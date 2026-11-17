@@ -1,4 +1,4 @@
-import { Octokit } from "octokit";
+import type { Octokit } from "octokit";
 
 export interface RepoReleaseData {
   totalDownloads: number;
@@ -13,7 +13,7 @@ export interface RepoReleaseData {
 export async function getRepoReleases(
   octokit: Octokit,
   owner: string,
-  repo: string
+  repo: string,
 ): Promise<RepoReleaseData> {
   try {
     const { data } = await octokit.rest.repos.listReleases({
@@ -22,8 +22,11 @@ export async function getRepoReleases(
       per_page: 100,
     });
 
-    const releases = data.map(release => {
-      const downloadCount = release.assets.reduce((sum, asset) => sum + asset.download_count, 0);
+    const releases = data.map((release) => {
+      const downloadCount = release.assets.reduce(
+        (sum, asset) => sum + asset.download_count,
+        0,
+      );
       return {
         tagName: release.tag_name,
         name: release.name || release.tag_name,
@@ -32,7 +35,10 @@ export async function getRepoReleases(
       };
     });
 
-    const totalDownloads = releases.reduce((sum, release) => sum + release.downloadCount, 0);
+    const totalDownloads = releases.reduce(
+      (sum, release) => sum + release.downloadCount,
+      0,
+    );
 
     return {
       totalDownloads,

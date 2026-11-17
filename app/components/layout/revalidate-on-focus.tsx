@@ -14,15 +14,15 @@ export function RevalidateOnFocus() {
       const oneMinute = 60 * 1000;
 
       if (now - lastRevalidateTime.current >= oneMinute) {
-        revalidatePage(pathname);
+        void revalidatePage(pathname);
         lastRevalidateTime.current = now;
       }
     };
 
-    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
-      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener("focus", handleWindowFocus);
     };
   }, [pathname]);
 

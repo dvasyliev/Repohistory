@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { signout } from '@/lib/actions/auth';
+import { useEffect } from "react";
+import { signout } from "@/lib/actions/auth";
 
 export default function Error({
   error,
@@ -10,7 +10,7 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
-    signout();
+    void signout();
   }, [error]);
 
   return null;

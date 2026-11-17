@@ -2,8 +2,14 @@
 
 import { useMemo } from "react";
 import { Line } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { ChartConfig } from "@/app/components/ui/chart";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
@@ -36,7 +42,10 @@ const COLORS = [
   "#6278f8",
 ];
 
-export function PopularContentChart({ traffic, isLoading = false }: PopularContentChartProps) {
+export function PopularContentChart({
+  traffic,
+  isLoading = false,
+}: PopularContentChartProps) {
   const { dateRange } = useDateRange();
 
   const { data, chartConfig } = useMemo(() => {
@@ -48,8 +57,8 @@ export function PopularContentChart({ traffic, isLoading = false }: PopularConte
     // Create a map of dates to path data
     const dateMap = new Map<string, Record<string, number>>();
 
-    topPaths.forEach(pathItem => {
-      pathItem.data.forEach(item => {
+    topPaths.forEach((pathItem) => {
+      pathItem.data.forEach((item) => {
         if (!dateMap.has(item.timestamp)) {
           dateMap.set(item.timestamp, {});
         }
@@ -63,7 +72,7 @@ export function PopularContentChart({ traffic, isLoading = false }: PopularConte
     const chartData = Array.from(dateMap.entries())
       .map(([date, paths]) => ({
         date,
-        ...paths
+        ...paths,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -91,7 +100,6 @@ export function PopularContentChart({ traffic, isLoading = false }: PopularConte
 
   const showHint = filteredData.length === 1;
 
-
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b">
@@ -102,7 +110,7 @@ export function PopularContentChart({ traffic, isLoading = false }: PopularConte
           </CardDescription>
         </div>
         {showHint && (
-          <div className="hidden md:block text-sm text-muted-foreground">
+          <div className="hidden text-sm text-muted-foreground md:block">
             💡 Come back in a few days to see trends over time
           </div>
         )}
@@ -116,7 +124,7 @@ export function PopularContentChart({ traffic, isLoading = false }: PopularConte
             hideZeroValues
             isLoading={isLoading}
           >
-            {Object.keys(chartConfig).map(path => (
+            {Object.keys(chartConfig).map((path) => (
               <Line
                 isAnimationActive={false}
                 key={path}

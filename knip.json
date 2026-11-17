@@ -11,5 +11,13 @@
     "@size-limit/file",
     "server-only"
   ],
-  "ignore": [".claude/**"]
+  "ignore": [
+    ".claude/**"
+  ],
+  "ignoreIssues": {
+    "app/components/ui/**": [
+      "exports",
+      "types"
+    ]
+  }
 }

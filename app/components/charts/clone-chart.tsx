@@ -2,9 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { Area } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { Skeleton } from "@/app/components/ui/skeleton";
-import { ChartConfig, ChartTooltip } from "@/app/components/ui/chart";
+import type { ChartConfig } from "@/app/components/ui/chart";
+import { ChartTooltip } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { TrendIndicator } from "./trend-indicator";
@@ -46,16 +53,21 @@ export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
 
   const handleLegendClick = (dataKey: string) => {
     if (hiddenSeries.includes(dataKey)) {
-      setHiddenSeries(hiddenSeries.filter(key => key !== dataKey));
+      setHiddenSeries(hiddenSeries.filter((key) => key !== dataKey));
     } else {
-      setHiddenSeries(prev => [...prev, dataKey]);
+      setHiddenSeries((prev) => [...prev, dataKey]);
     }
   };
 
   const data = useMemo(() => {
     if (!traffic) return [];
     return traffic.clones.clones.map((item, index, array) => {
-      const result: { date: string; unique: number; total: number;[key: string]: string | number } = {
+      const result: {
+        date: string;
+        unique: number;
+        total: number;
+        [key: string]: string | number;
+      } = {
         date: item.timestamp,
         unique: item.uniques,
         total: item.count,
@@ -93,26 +105,21 @@ export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
     return calculateTrendPercentage(filteredData, data, "total");
   }, [filteredData, data]);
 
-
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b">
         <div className="flex flex-1 flex-col justify-center gap-1">
           <CardTitle>Repo Clones</CardTitle>
-          <CardDescription>
-            Daily clones and unique cloners
-          </CardDescription>
+          <CardDescription>Daily clones and unique cloners</CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="text-xs text-muted-foreground">
-            Total Clones
-          </span>
+          <span className="text-xs text-muted-foreground">Total Clones</span>
           {isLoading ? (
             <Skeleton className="h-6 w-24" />
           ) : (
-            <div className="h-6 flex items-center gap-2">
+            <div className="flex h-6 items-center gap-2">
               <TrendIndicator trend={clonesTrend} />
-              <span className="text-lg font-bold leading-none sm:text-2xl">
+              <span className="text-lg leading-none font-bold sm:text-2xl">
                 {totalClones.toLocaleString()}
               </span>
             </div>
@@ -138,15 +145,15 @@ export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
                     label={label}
                     entries={[
                       {
-                        dataKey: 'total',
-                        label: 'Total',
-                        color: '#315c72'
+                        dataKey: "total",
+                        label: "Total",
+                        color: "#315c72",
                       },
                       {
-                        dataKey: 'unique',
-                        label: 'Unique',
-                        color: '#62C3F8'
-                      }
+                        dataKey: "unique",
+                        label: "Unique",
+                        color: "#62C3F8",
+                      },
                     ]}
                     hiddenSeries={hiddenSeries}
                   />

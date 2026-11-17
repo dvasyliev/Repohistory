@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
@@ -8,12 +8,12 @@ import Link from "next/link";
 
 export function DashboardHeader() {
   const searchParams = useSearchParams();
-  const viewMode = (searchParams.get('view') === 'owners' ? 'owners' : 'repos');
+  const viewMode = searchParams.get("view") === "owners" ? "owners" : "repos";
 
   const handleViewChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('view', value);
-    window.history.pushState(null, '', `?${params.toString()}`);
+    params.set("view", value);
+    window.history.pushState(null, "", `?${params.toString()}`);
   };
 
   return (
@@ -24,7 +24,10 @@ export function DashboardHeader() {
           <TabsTrigger value="owners">Owners</TabsTrigger>
         </TabsList>
       </Tabs>
-      <Link href="https://github.com/apps/repohistory/installations/new" rel="noopener noreferrer">
+      <Link
+        href="https://github.com/apps/repohistory/installations/new"
+        rel="noopener noreferrer"
+      >
         <Button variant="secondary">
           <Plus className="h-4 w-4" />
           Add Repos

@@ -5,4 +5,3 @@ export interface Repo {
   stargazers_count: number;
   description: string | null;
 }
-
