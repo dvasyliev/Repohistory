@@ -20,7 +20,8 @@
     "prepare": "git config core.hooksPath .githooks",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "secrets:push": "node scripts/push-secrets.mjs"
   },
   "dependencies": {
     "@next/env": "^15.3.5",
