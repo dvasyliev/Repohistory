@@ -1,17 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isPublicPath } from "@/lib/auth/public-paths";
 import { isValidSession, SESSION_COOKIE } from "@/lib/auth/session";
-
-const PUBLIC_PREFIXES = ["/signin", "/star-history", "/api/svg"];
-
-function isPublic(pathname: string) {
-  return PUBLIC_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+  if (isPublicPath(pathname)) return NextResponse.next();
 
   const signedIn = await isValidSession(
     request.cookies.get(SESSION_COOKIE)?.value,
@@ -30,7 +23,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|json|webmanifest|js|css|woff2?)$).*)",
-  ],
+  matcher: ["/((?!_next/).*)"],
 };
