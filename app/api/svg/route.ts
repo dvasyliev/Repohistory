@@ -135,6 +135,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching GitHub data:", error);
 
-    return NextResponse.redirect("https://repohistory.com");
+    return NextResponse.redirect(new URL("/star-history", request.url));
   }
 }
