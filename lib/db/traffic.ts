@@ -23,11 +23,9 @@ export async function getDailyHistoryForRepos(
 ): Promise<Map<number, DailyHistory[]>> {
   if (repoIds.length === 0) return new Map();
   const t = table === "views" ? views : clones;
-  const rows = await db
-    .select()
-    .from(t)
-    .where(inArray(t.repoId, repoIds))
-    .orderBy(asc(t.date));
+  const rows = await queryChunks(repoIds, (ids) =>
+    db.select().from(t).where(inArray(t.repoId, ids)).orderBy(asc(t.date)),
+  );
   return groupByRepo(rows);
 }
 
@@ -36,11 +34,13 @@ export async function getPathHistoryForRepos(
   repoIds: number[],
 ): Promise<Map<number, PathHistory[]>> {
   if (repoIds.length === 0) return new Map();
-  const rows = await db
-    .select()
-    .from(paths)
-    .where(inArray(paths.repoId, repoIds))
-    .orderBy(asc(paths.date));
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select()
+      .from(paths)
+      .where(inArray(paths.repoId, ids))
+      .orderBy(asc(paths.date)),
+  );
   return groupByRepo(rows);
 }
 
@@ -49,11 +49,13 @@ export async function getReferrerHistoryForRepos(
   repoIds: number[],
 ): Promise<Map<number, ReferrerHistory[]>> {
   if (repoIds.length === 0) return new Map();
-  const rows = await db
-    .select()
-    .from(referrers)
-    .where(inArray(referrers.repoId, repoIds))
-    .orderBy(asc(referrers.date));
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select()
+      .from(referrers)
+      .where(inArray(referrers.repoId, ids))
+      .orderBy(asc(referrers.date)),
+  );
   return groupByRepo(rows);
 }
 
@@ -80,6 +82,20 @@ export async function getReferrerHistory(
 ): Promise<ReferrerHistory[]> {
   const byRepo = await getReferrerHistoryForRepos(db, [repoId]);
   return byRepo.get(repoId) ?? [];
+}
+
+const REPO_IDS_PER_QUERY = 90;
+
+async function queryChunks<T extends { date: string }>(
+  repoIds: number[],
+  run: (ids: number[]) => Promise<T[]>,
+): Promise<T[]> {
+  const chunks: number[][] = [];
+  for (let i = 0; i < repoIds.length; i += REPO_IDS_PER_QUERY) {
+    chunks.push(repoIds.slice(i, i + REPO_IDS_PER_QUERY));
+  }
+  const results = await Promise.all(chunks.map(run));
+  return results.flat().sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function groupByRepo<T extends { repoId: number }>(

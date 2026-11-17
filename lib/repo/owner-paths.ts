@@ -16,10 +16,15 @@ export async function getOwnerPaths(
     data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
-  const history = await getPathHistoryForRepos(
-    db,
-    repos.map((repo) => repo.id),
-  );
+  let history: Awaited<ReturnType<typeof getPathHistoryForRepos>> = new Map();
+  try {
+    history = await getPathHistoryForRepos(
+      db,
+      repos.map((repo) => repo.id),
+    );
+  } catch (error) {
+    console.error("Error fetching paths history from D1:", error);
+  }
   const repoPathsPromises = repos.map((repo) =>
     getRepoPaths(
       octokit,

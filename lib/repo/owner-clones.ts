@@ -13,11 +13,16 @@ export async function getOwnerClones(
   uniques: number;
   clones: Array<{ timestamp: string; count: number; uniques: number }>;
 }> {
-  const history = await getDailyHistoryForRepos(
-    db,
-    "clones",
-    repos.map((repo) => repo.id),
-  );
+  let history: Awaited<ReturnType<typeof getDailyHistoryForRepos>> = new Map();
+  try {
+    history = await getDailyHistoryForRepos(
+      db,
+      "clones",
+      repos.map((repo) => repo.id),
+    );
+  } catch (error) {
+    console.error("Error fetching clones history from D1:", error);
+  }
   const repoClonesPromises = repos.map((repo) =>
     getRepoClones(
       octokit,

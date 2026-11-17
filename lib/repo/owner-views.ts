@@ -13,11 +13,16 @@ export async function getOwnerViews(
   uniques: number;
   views: Array<{ timestamp: string; count: number; uniques: number }>;
 }> {
-  const history = await getDailyHistoryForRepos(
-    db,
-    "views",
-    repos.map((repo) => repo.id),
-  );
+  let history: Awaited<ReturnType<typeof getDailyHistoryForRepos>> = new Map();
+  try {
+    history = await getDailyHistoryForRepos(
+      db,
+      "views",
+      repos.map((repo) => repo.id),
+    );
+  } catch (error) {
+    console.error("Error fetching views history from D1:", error);
+  }
   const repoViewsPromises = repos.map((repo) =>
     getRepoViews(
       octokit,

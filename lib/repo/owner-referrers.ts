@@ -15,10 +15,16 @@ export async function getOwnerReferrers(
     data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
-  const history = await getReferrerHistoryForRepos(
-    db,
-    repos.map((repo) => repo.id),
-  );
+  let history: Awaited<ReturnType<typeof getReferrerHistoryForRepos>> =
+    new Map();
+  try {
+    history = await getReferrerHistoryForRepos(
+      db,
+      repos.map((repo) => repo.id),
+    );
+  } catch (error) {
+    console.error("Error fetching referrers history from D1:", error);
+  }
   const repoReferrersPromises = repos.map((repo) =>
     getRepoReferrers(
       octokit,

@@ -20,7 +20,6 @@
     "prepare": "git config core.hooksPath .githooks",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --include-runtime=false --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply repohistory --local",
     "db:migrate:remote": "wrangler d1 migrations apply repohistory --remote",
