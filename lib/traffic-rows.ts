@@ -59,6 +59,18 @@ export function toReferrerRows(
   }));
 }
 
+const ROWS_PER_STATEMENT = 20;
+const ROWS_PER_BATCH = 500;
+const STATEMENTS_PER_BATCH = ROWS_PER_BATCH / ROWS_PER_STATEMENT;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 export async function upsertTraffic(
   db: Db,
   rows: {
@@ -69,46 +81,40 @@ export async function upsertTraffic(
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
-  const statements = [];
-  if (rows.views.length > 0) {
-    statements.push(
+  const statements = [
+    ...chunk(rows.views, ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(views)
-        .values(rows.views)
+        .values(values)
         .onConflictDoUpdate({ target: [views.repoId, views.date], set }),
-    );
-  }
-  if (rows.clones.length > 0) {
-    statements.push(
+    ),
+    ...chunk(rows.clones, ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(clones)
-        .values(rows.clones)
+        .values(values)
         .onConflictDoUpdate({ target: [clones.repoId, clones.date], set }),
-    );
-  }
-  if (rows.paths.length > 0) {
-    statements.push(
+    ),
+    ...chunk(rows.paths, ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(paths)
-        .values(rows.paths)
+        .values(values)
         .onConflictDoUpdate({
           target: [paths.repoId, paths.path, paths.date],
           set,
         }),
-    );
-  }
-  if (rows.referrers.length > 0) {
-    statements.push(
+    ),
+    ...chunk(rows.referrers, ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(referrers)
-        .values(rows.referrers)
+        .values(values)
         .onConflictDoUpdate({
           target: [referrers.repoId, referrers.referrer, referrers.date],
           set,
         }),
-    );
+    ),
+  ];
+  for (const group of chunk(statements, STATEMENTS_PER_BATCH)) {
+    const [first, ...rest] = group;
+    await db.batch([first, ...rest]);
   }
-  if (statements.length === 0) return;
-  const [first, ...rest] = statements;
-  await db.batch([first, ...rest]);
 }

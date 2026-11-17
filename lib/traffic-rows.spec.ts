@@ -1,5 +1,13 @@
+import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { describe, expect, it } from "vitest";
-import { toDailyRows, toPathRows, toReferrerRows } from "./traffic-rows";
+import * as schema from "./db/schema";
+import {
+  toDailyRows,
+  toPathRows,
+  toReferrerRows,
+  upsertTraffic,
+  type DailyRow,
+} from "./traffic-rows";
 
 describe("toDailyRows", () => {
   it("keeps only the date of the timestamp", () => {
@@ -65,5 +73,62 @@ describe("toReferrerRows", () => {
         unique: 4,
       },
     ]);
+  });
+});
+
+describe("upsertTraffic", () => {
+  function recordingDb() {
+    const batches: { sql: string; params: unknown[] }[][] = [];
+    const db = drizzle(
+      () => Promise.resolve({ rows: [] }),
+      (queries) => {
+        batches.push(queries.map(({ sql, params }) => ({ sql, params })));
+        return Promise.resolve(queries.map(() => ({ rows: [] })));
+      },
+      { schema },
+    );
+    return { db, batches };
+  }
+
+  const daily = (n: number): DailyRow[] =>
+    Array.from({ length: n }, (_, i) => ({
+      repoId: 1,
+      date: `2025-01-${String(i).padStart(3, "0")}`,
+      total: i,
+      unique: i,
+    }));
+
+  it("splits 45 rows into 3 statements of at most 20 rows", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: daily(45),
+      clones: [],
+      paths: [],
+      referrers: [],
+    });
+    expect(batches).toHaveLength(1);
+    expect(batches[0].map((s) => s.params.length / 4)).toEqual([20, 20, 5]);
+  });
+
+  it("sends at most 500 rows per batch call", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: daily(1020),
+      clones: [],
+      paths: [],
+      referrers: [],
+    });
+    expect(batches.map((b) => b.length)).toEqual([25, 25, 1]);
+  });
+
+  it("sends nothing for empty input", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+    });
+    expect(batches).toHaveLength(0);
   });
 });

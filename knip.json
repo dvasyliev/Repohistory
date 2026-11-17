@@ -23,6 +23,7 @@
     ]
   },
   "entry": [
-    "open-next.config.ts"
+    "open-next.config.ts",
+    "scripts/import-csv.ts"
   ]
 }
