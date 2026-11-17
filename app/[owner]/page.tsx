@@ -10,7 +10,7 @@ import {
 import { Navbar } from "@/app/components/layout/navbar";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
 import { getRepos } from "@/lib/octokit/get-repos";
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { StarsChart } from "@/app/components/charts/stars-chart";
 import { ViewChart } from "@/app/components/charts/view-chart";
@@ -44,7 +44,7 @@ export default async function OwnerPage({ params }: PageProps) {
     totalStars,
   };
 
-  const supabase = await createClient();
+  const db = getDb();
 
   return (
     <DateRangeProvider fullName={owner}>
@@ -55,31 +55,23 @@ export default async function OwnerPage({ params }: PageProps) {
             <OwnerStarsChartWrapper owner={owner} repos={ownerRepos} />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
-            <OwnerViewChartWrapper
-              owner={owner}
-              repos={ownerRepos}
-              supabase={supabase}
-            />
+            <OwnerViewChartWrapper owner={owner} repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<CloneChart isLoading />}>
-            <OwnerCloneChartWrapper
-              owner={owner}
-              repos={ownerRepos}
-              supabase={supabase}
-            />
+            <OwnerCloneChartWrapper owner={owner} repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<ReferrersChart isLoading />}>
             <OwnerReferrersChartWrapper
               owner={owner}
               repos={ownerRepos}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
           <Suspense fallback={<PopularContentChart isLoading />}>
             <OwnerPopularContentChartWrapper
               owner={owner}
               repos={ownerRepos}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
         </div>

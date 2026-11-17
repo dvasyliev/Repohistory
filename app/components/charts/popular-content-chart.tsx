@@ -22,7 +22,7 @@ interface PopularContentChartProps {
       data: Array<{
         timestamp: string;
         count: number;
-        uniques: number;
+        uniques: number | null;
       }>;
     }>;
   };

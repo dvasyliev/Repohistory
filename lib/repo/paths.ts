@@ -1,44 +1,34 @@
 import type { Octokit } from "octokit";
-import type { createClient } from "@/lib/supabase/server";
+import { getPathHistory, type PathHistory } from "@/lib/db/traffic";
+import type { Db } from "@/lib/db/client";
 
 export async function getRepoPaths(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   fullName: string,
   repoId: number,
+  stored?: PathHistory[],
 ): Promise<{
   paths: Array<{
     path: string;
     title: string;
-    data: Array<{ timestamp: string; count: number; uniques: number }>;
+    data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
   try {
     const [owner, repo] = fullName.split("/");
 
     // Fetch data from both sources in parallel
-    const [supabaseResult, githubResult] = await Promise.allSettled([
-      supabase
-        .from("paths")
-        .select("date, path, total, unique")
-        .eq("repo_id", repoId)
-        .order("date", { ascending: true })
-        .overrideTypes<
-          Array<{ date: string; path: string; total: number; unique: number }>,
-          { merge: false }
-        >(),
+    const [storedResult, githubResult] = await Promise.allSettled([
+      stored ?? getPathHistory(db, repoId),
       octokit.rest.repos.getTopPaths({ owner, repo }),
     ]);
 
-    // Process Supabase data
-    const supabaseData =
-      (supabaseResult.status === "fulfilled" && supabaseResult.value.data) ||
-      [];
-    if (supabaseResult.status === "rejected") {
-      console.error(
-        "Error fetching paths from Supabase:",
-        supabaseResult.reason,
-      );
+    // Process stored data
+    const storedData =
+      (storedResult.status === "fulfilled" && storedResult.value) || [];
+    if (storedResult.status === "rejected") {
+      console.error("Error fetching paths from D1:", storedResult.reason);
     }
 
     // Process GitHub data
@@ -63,17 +53,20 @@ export async function getRepoPaths(
     // Group data by path
     const pathMap = new Map<
       string,
-      { title: string; data: Map<string, { count: number; uniques: number }> }
+      {
+        title: string;
+        data: Map<string, { count: number; uniques: number | null }>;
+      }
     >();
 
-    // Add Supabase data
-    supabaseData.forEach((item) => {
+    // Add stored data
+    storedData.forEach((item) => {
       if (!pathMap.has(item.path)) {
         pathMap.set(item.path, { title: item.path, data: new Map() });
       }
       pathMap.get(item.path)!.data.set(item.date, {
         count: item.total || 0,
-        uniques: item.unique || 0,
+        uniques: item.unique,
       });
     });
 
@@ -111,7 +104,7 @@ export async function getRepoPaths(
           data.push({
             timestamp: dateStr,
             count: existingData?.count || 0,
-            uniques: existingData?.uniques || 0,
+            uniques: existingData?.uniques ?? null,
           });
         }
       }

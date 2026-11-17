@@ -1,21 +1,33 @@
 import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoPaths } from "./paths";
-import type { createClient } from "@/lib/supabase/server";
+import { sumUniques } from "./sum-uniques";
+import type { Db } from "@/lib/db/client";
+import { getPathHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerPaths(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   repos: Repo[],
 ): Promise<{
   paths: Array<{
     path: string;
     title: string;
-    data: Array<{ timestamp: string; count: number; uniques: number }>;
+    data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
+  const history = await getPathHistoryForRepos(
+    db,
+    repos.map((repo) => repo.id),
+  );
   const repoPathsPromises = repos.map((repo) =>
-    getRepoPaths(octokit, supabase, repo.full_name, repo.id),
+    getRepoPaths(
+      octokit,
+      db,
+      repo.full_name,
+      repo.id,
+      history.get(repo.id) ?? [],
+    ),
   );
 
   const allRepoPaths = await Promise.all(repoPathsPromises);
@@ -32,21 +44,21 @@ function aggregatePathsHistory(
     paths: Array<{
       path: string;
       title: string;
-      data: Array<{ timestamp: string; count: number; uniques: number }>;
+      data: Array<{ timestamp: string; count: number; uniques: number | null }>;
     }>;
   }>,
   repos: Repo[],
 ): Array<{
   path: string;
   title: string;
-  data: Array<{ timestamp: string; count: number; uniques: number }>;
+  data: Array<{ timestamp: string; count: number; uniques: number | null }>;
 }> {
   const pathMap = new Map<
     string,
     {
       title: string;
       repoCount: Set<string>;
-      data: Map<string, { count: number; uniques: number }>;
+      data: Map<string, { count: number; uniques: number | null }>;
     }
   >();
 
@@ -76,7 +88,7 @@ function aggregatePathsHistory(
         if (existing) {
           pathInfo.data.set(timestamp, {
             count: existing.count + count,
-            uniques: existing.uniques + uniques,
+            uniques: sumUniques(existing.uniques, uniques),
           });
         } else {
           pathInfo.data.set(timestamp, { count, uniques });

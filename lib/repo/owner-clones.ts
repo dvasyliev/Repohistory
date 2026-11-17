@@ -1,19 +1,31 @@
 import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoClones } from "./clones";
-import type { createClient } from "@/lib/supabase/server";
+import type { Db } from "@/lib/db/client";
+import { getDailyHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerClones(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   repos: Repo[],
 ): Promise<{
   count: number;
   uniques: number;
   clones: Array<{ timestamp: string; count: number; uniques: number }>;
 }> {
+  const history = await getDailyHistoryForRepos(
+    db,
+    "clones",
+    repos.map((repo) => repo.id),
+  );
   const repoClonesPromises = repos.map((repo) =>
-    getRepoClones(octokit, supabase, repo.full_name, repo.id),
+    getRepoClones(
+      octokit,
+      db,
+      repo.full_name,
+      repo.id,
+      history.get(repo.id) ?? [],
+    ),
   );
 
   const allRepoClones = await Promise.all(repoClonesPromises);

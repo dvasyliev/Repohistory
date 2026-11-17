@@ -12,7 +12,7 @@ import {
 import { Navbar } from "@/app/components/layout/navbar";
 import { getRepoInfo } from "@/lib/repo/info";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/client";
 import { StarsChart } from "@/app/components/charts/stars-chart";
 import { ViewChart } from "@/app/components/charts/view-chart";
 import { CloneChart } from "@/app/components/charts/clone-chart";
@@ -44,7 +44,7 @@ export default async function RepoPage({ params }: PageProps) {
     return;
   }
 
-  const supabase = await createClient();
+  const db = getDb();
   const fullName = `${owner}/${repo}`;
   const octokit = await getUserOctokit();
   const repoInfo = await getRepoInfo(octokit, owner, repo);
@@ -64,28 +64,28 @@ export default async function RepoPage({ params }: PageProps) {
             <ViewChartWrapper
               fullName={fullName}
               repoId={repoInfo.id}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
           <Suspense fallback={<CloneChart isLoading />}>
             <CloneChartWrapper
               fullName={fullName}
               repoId={repoInfo.id}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
           <Suspense fallback={<ReferrersChart isLoading />}>
             <ReferrersChartWrapper
               fullName={fullName}
               repoId={repoInfo.id}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
           <Suspense fallback={<PopularContentChart isLoading />}>
             <PopularContentChartWrapper
               fullName={fullName}
               repoId={repoInfo.id}
-              supabase={supabase}
+              db={db}
             />
           </Suspense>
           <Suspense fallback={<ReleaseChart isLoading />}>

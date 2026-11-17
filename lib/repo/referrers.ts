@@ -1,48 +1,33 @@
 import type { Octokit } from "octokit";
-import type { createClient } from "@/lib/supabase/server";
+import { getReferrerHistory, type ReferrerHistory } from "@/lib/db/traffic";
+import type { Db } from "@/lib/db/client";
 
 export async function getRepoReferrers(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   fullName: string,
   repoId: number,
+  stored?: ReferrerHistory[],
 ): Promise<{
   referrers: Array<{
     referrer: string;
-    data: Array<{ timestamp: string; count: number; uniques: number }>;
+    data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
   try {
     const [owner, repo] = fullName.split("/");
 
     // Fetch data from both sources in parallel
-    const [supabaseResult, githubResult] = await Promise.allSettled([
-      supabase
-        .from("referrers")
-        .select("date, referrer, total, unique")
-        .eq("repo_id", repoId)
-        .order("date", { ascending: true })
-        .overrideTypes<
-          Array<{
-            date: string;
-            referrer: string;
-            total: number;
-            unique: number;
-          }>,
-          { merge: false }
-        >(),
+    const [storedResult, githubResult] = await Promise.allSettled([
+      stored ?? getReferrerHistory(db, repoId),
       octokit.rest.repos.getTopReferrers({ owner, repo }),
     ]);
 
-    // Process Supabase data
-    const supabaseData =
-      (supabaseResult.status === "fulfilled" && supabaseResult.value.data) ||
-      [];
-    if (supabaseResult.status === "rejected") {
-      console.error(
-        "Error fetching referrers from Supabase:",
-        supabaseResult.reason,
-      );
+    // Process stored data
+    const storedData =
+      (storedResult.status === "fulfilled" && storedResult.value) || [];
+    if (storedResult.status === "rejected") {
+      console.error("Error fetching referrers from D1:", storedResult.reason);
     }
 
     // Process GitHub data
@@ -66,17 +51,17 @@ export async function getRepoReferrers(
     // Group data by referrer
     const referrerMap = new Map<
       string,
-      Map<string, { count: number; uniques: number }>
+      Map<string, { count: number; uniques: number | null }>
     >();
 
-    // Add Supabase data
-    supabaseData.forEach((item) => {
+    // Add stored data
+    storedData.forEach((item) => {
       if (!referrerMap.has(item.referrer)) {
         referrerMap.set(item.referrer, new Map());
       }
       referrerMap
         .get(item.referrer)!
-        .set(item.date, { count: item.total || 0, uniques: item.unique || 0 });
+        .set(item.date, { count: item.total || 0, uniques: item.unique });
     });
 
     // Add GitHub data (override for today's date)
@@ -111,7 +96,7 @@ export async function getRepoReferrers(
             data.push({
               timestamp: dateStr,
               count: existingData?.count || 0,
-              uniques: existingData?.uniques || 0,
+              uniques: existingData?.uniques ?? null,
             });
           }
         }

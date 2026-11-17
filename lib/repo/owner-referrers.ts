@@ -1,20 +1,32 @@
 import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoReferrers } from "./referrers";
-import type { createClient } from "@/lib/supabase/server";
+import { sumUniques } from "./sum-uniques";
+import type { Db } from "@/lib/db/client";
+import { getReferrerHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerReferrers(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   repos: Repo[],
 ): Promise<{
   referrers: Array<{
     referrer: string;
-    data: Array<{ timestamp: string; count: number; uniques: number }>;
+    data: Array<{ timestamp: string; count: number; uniques: number | null }>;
   }>;
 }> {
+  const history = await getReferrerHistoryForRepos(
+    db,
+    repos.map((repo) => repo.id),
+  );
   const repoReferrersPromises = repos.map((repo) =>
-    getRepoReferrers(octokit, supabase, repo.full_name, repo.id),
+    getRepoReferrers(
+      octokit,
+      db,
+      repo.full_name,
+      repo.id,
+      history.get(repo.id) ?? [],
+    ),
   );
 
   const allRepoReferrers = await Promise.all(repoReferrersPromises);
@@ -30,16 +42,16 @@ function aggregateReferrersHistory(
   allRepoReferrers: Array<{
     referrers: Array<{
       referrer: string;
-      data: Array<{ timestamp: string; count: number; uniques: number }>;
+      data: Array<{ timestamp: string; count: number; uniques: number | null }>;
     }>;
   }>,
 ): Array<{
   referrer: string;
-  data: Array<{ timestamp: string; count: number; uniques: number }>;
+  data: Array<{ timestamp: string; count: number; uniques: number | null }>;
 }> {
   const referrerMap = new Map<
     string,
-    Map<string, { count: number; uniques: number }>
+    Map<string, { count: number; uniques: number | null }>
   >();
 
   // Aggregate data from all repos
@@ -56,7 +68,7 @@ function aggregateReferrersHistory(
         if (existing) {
           referrerDateMap.set(timestamp, {
             count: existing.count + count,
-            uniques: existing.uniques + uniques,
+            uniques: sumUniques(existing.uniques, uniques),
           });
         } else {
           referrerDateMap.set(timestamp, { count, uniques });

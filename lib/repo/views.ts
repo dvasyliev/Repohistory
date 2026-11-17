@@ -1,11 +1,13 @@
 import type { Octokit } from "octokit";
-import type { createClient } from "@/lib/supabase/server";
+import { getDailyHistory, type DailyHistory } from "@/lib/db/traffic";
+import type { Db } from "@/lib/db/client";
 
 export async function getRepoViews(
   octokit: Octokit,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Db,
   fullName: string,
   repoId: number,
+  stored?: DailyHistory[],
 ): Promise<{
   count: number;
   uniques: number;
@@ -15,29 +17,17 @@ export async function getRepoViews(
     const [owner, repo] = fullName.split("/");
 
     // Fetch data from both sources in parallel
-    const [supabaseResult, githubResult] = await Promise.allSettled([
-      supabase
-        .from("views")
-        .select("date, total, unique")
-        .eq("repo_id", repoId)
-        .order("date", { ascending: true })
-        .overrideTypes<
-          Array<{ date: string; total: number; unique: number }>,
-          { merge: false }
-        >(),
+    const [storedResult, githubResult] = await Promise.allSettled([
+      stored ?? getDailyHistory(db, "views", repoId),
       octokit.rest.repos.getViews({ owner, repo }),
     ]);
 
-    // Process Supabase data
-    const supabaseData =
-      (supabaseResult.status === "fulfilled" && supabaseResult.value.data) ||
-      [];
+    // Process stored data
+    const storedData =
+      (storedResult.status === "fulfilled" && storedResult.value) || [];
 
-    if (supabaseResult.status === "rejected") {
-      console.error(
-        "Error fetching views from Supabase:",
-        supabaseResult.reason,
-      );
+    if (storedResult.status === "rejected") {
+      console.error("Error fetching views from D1:", storedResult.reason);
     }
 
     // Process GitHub data
@@ -57,9 +47,9 @@ export async function getRepoViews(
       );
     }
 
-    // Merge data: GitHub overrides Supabase for matching dates
+    // Merge data: GitHub overrides stored for matching dates
     const dataMap = new Map(
-      supabaseData.map((item) => [
+      storedData.map((item) => [
         item.date,
         {
           timestamp: item.date,

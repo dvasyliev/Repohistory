@@ -9,7 +9,7 @@ import { getOwnerClones } from "@/lib/repo/owner-clones";
 import { getOwnerReferrers } from "@/lib/repo/owner-referrers";
 import { getOwnerPaths } from "@/lib/repo/owner-paths";
 import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db/client";
 import type { Repo } from "@/lib/types";
 
 interface OwnerStarsChartWrapperProps {
@@ -28,59 +28,59 @@ export async function OwnerStarsChartWrapper({
 interface OwnerViewChartWrapperProps {
   owner: string;
   repos: Repo[];
-  supabase: SupabaseClient;
+  db: Db;
 }
 
 export async function OwnerViewChartWrapper({
   repos,
-  supabase,
+  db,
 }: OwnerViewChartWrapperProps) {
   const octokit = await getUserOctokit();
-  const views = await getOwnerViews(octokit, supabase, repos);
+  const views = await getOwnerViews(octokit, db, repos);
   return <ViewChart traffic={{ views }} />;
 }
 
 interface OwnerCloneChartWrapperProps {
   owner: string;
   repos: Repo[];
-  supabase: SupabaseClient;
+  db: Db;
 }
 
 export async function OwnerCloneChartWrapper({
   repos,
-  supabase,
+  db,
 }: OwnerCloneChartWrapperProps) {
   const octokit = await getUserOctokit();
-  const clones = await getOwnerClones(octokit, supabase, repos);
+  const clones = await getOwnerClones(octokit, db, repos);
   return <CloneChart traffic={{ clones }} />;
 }
 
 interface OwnerReferrersChartWrapperProps {
   owner: string;
   repos: Repo[];
-  supabase: SupabaseClient;
+  db: Db;
 }
 
 export async function OwnerReferrersChartWrapper({
   repos,
-  supabase,
+  db,
 }: OwnerReferrersChartWrapperProps) {
   const octokit = await getUserOctokit();
-  const { referrers } = await getOwnerReferrers(octokit, supabase, repos);
+  const { referrers } = await getOwnerReferrers(octokit, db, repos);
   return <ReferrersChart traffic={{ referrers }} />;
 }
 
 interface OwnerPopularContentChartWrapperProps {
   owner: string;
   repos: Repo[];
-  supabase: SupabaseClient;
+  db: Db;
 }
 
 export async function OwnerPopularContentChartWrapper({
   repos,
-  supabase,
+  db,
 }: OwnerPopularContentChartWrapperProps) {
   const octokit = await getUserOctokit();
-  const { paths } = await getOwnerPaths(octokit, supabase, repos);
+  const { paths } = await getOwnerPaths(octokit, db, repos);
   return <PopularContentChart traffic={{ paths }} />;
 }

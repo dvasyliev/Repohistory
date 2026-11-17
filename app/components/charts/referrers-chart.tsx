@@ -21,7 +21,7 @@ interface ReferrersChartProps {
       data: Array<{
         timestamp: string;
         count: number;
-        uniques: number;
+        uniques: number | null;
       }>;
     }>;
   };
