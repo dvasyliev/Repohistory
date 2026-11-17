@@ -25,10 +25,14 @@ export default defineConfig({
   // The tests never retry, so a trace is kept for every failure instead.
   use: { baseURL, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  // Reuse the dev server when one already listens on that port; never start a second.
+  // Always starts its own server: a running one would hold the real SITE_TOKEN from .env.local.
   webServer: {
     command,
     url: baseURL,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
+    env: {
+      ...(process.env as Record<string, string>),
+      SITE_TOKEN: "e2e-token",
+    },
   },
 });
