@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import SignInButton from "@/app/components/auth/signin-button";
+import { SignInForm } from "./_components/signin-form";
 
 export const metadata: Metadata = {
   title: "Sign In | Repohistory",
@@ -24,7 +24,7 @@ export default function SignInPage() {
             Sign in to Repohistory
           </h1>
         </div>
-        <SignInButton />
+        <SignInForm />
       </div>
     </div>
   );
