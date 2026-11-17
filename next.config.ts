@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
+  typedRoutes: true,
+  redirects() {
+    return Promise.resolve([
       {
-        source: '/login',
-        destination: '/signin',
+        source: "/login",
+        destination: "/signin",
         permanent: true,
       },
-    ];
+    ]);
   },
   images: {
     dangerouslyAllowSVG: true,

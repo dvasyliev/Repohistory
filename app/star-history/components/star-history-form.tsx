@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
@@ -10,7 +11,10 @@ interface StarHistoryFormProps {
   initialRepo: string;
 }
 
-export function StarHistoryForm({ initialOwner, initialRepo }: StarHistoryFormProps) {
+export function StarHistoryForm({
+  initialOwner,
+  initialRepo,
+}: StarHistoryFormProps) {
   const router = useRouter();
   const [owner, setOwner] = useState(initialOwner);
   const [repo, setRepo] = useState(initialRepo);
@@ -20,7 +24,7 @@ export function StarHistoryForm({ initialOwner, initialRepo }: StarHistoryFormPr
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set("owner", owner);
       newUrl.searchParams.set("repo", repo);
-      router.push(newUrl.toString());
+      router.push(newUrl.toString() as Route);
     }
   };
 
@@ -32,7 +36,7 @@ export function StarHistoryForm({ initialOwner, initialRepo }: StarHistoryFormPr
 
   return (
     <>
-      <div className="flex justify-center items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <Input
           placeholder="facebook"
           value={owner}
@@ -40,7 +44,7 @@ export function StarHistoryForm({ initialOwner, initialRepo }: StarHistoryFormPr
           onKeyDown={handleKeyDown}
           className="w-40"
         />
-        <span className="text-muted-foreground text-xl">/</span>
+        <span className="text-xl text-muted-foreground">/</span>
         <Input
           placeholder="react"
           value={repo}
@@ -49,10 +53,7 @@ export function StarHistoryForm({ initialOwner, initialRepo }: StarHistoryFormPr
           className="w-40"
         />
       </div>
-      <Button
-        onClick={handleGenerate}
-        disabled={!owner || !repo}
-      >
+      <Button onClick={handleGenerate} disabled={!owner || !repo}>
         Generate
       </Button>
     </>
