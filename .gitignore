@@ -46,3 +46,6 @@ certificates
 /test-results/
 /playwright-report/
 /.playwright-cli/
+
+# CSV exports of traffic history (owner data, never committed)
+/imports/

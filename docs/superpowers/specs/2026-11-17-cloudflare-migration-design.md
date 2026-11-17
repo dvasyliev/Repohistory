@@ -7,7 +7,7 @@ Repohistory is a personal fork used by one person (the owner). Today it runs on 
 ## Goals
 
 - The site runs on Cloudflare Workers through OpenNext (`@opennextjs/cloudflare`), on the Workers Free plan.
-- Traffic history (`views`, `clones`, `paths`, `referrers`) lives in one D1 database. It starts empty: the only Supabase backup (July 2025) holds 64 rows of views and clones for 3 repositories, and the owner chose not to import it.
+- Traffic history (`views`, `clones`, `paths`, `referrers`) lives in one D1 database. History comes from the CSV exports of the hosted repohistory.com service, imported per repository (see "History import"). The Supabase backup (July 2025, 64 rows) is not imported.
 - Every page and API route except the public ones asks for the owner's site token. The public ones stay open: `/star-history`, `/api/svg` and static files (README badges link to them).
 - Repositories are listed and read through the owner's GitHub App, so no user GitHub token is needed. The App is private to the owner, so every installation is the owner's.
 - The daily traffic job keeps running in GitHub Actions and writes to D1 through the Cloudflare D1 HTTP API.
@@ -23,7 +23,7 @@ Repohistory is a personal fork used by one person (the owner). Today it runs on 
 
 - The token, the GitHub App private key or the Cloudflare API token ending up in the repo, in client JavaScript or in logs.
 - Public README badges (`/api/svg`) breaking.
-- A Supabase dump (it holds `auth.users`) committed to the repo.
+- A Supabase dump (it holds `auth.users`) or the owner's CSV exports committed to the repo.
 
 ## Constraints
 
@@ -56,7 +56,7 @@ Repohistory is a personal fork used by one person (the owner). Today it runs on 
   - `views(repo_id, date, total, unique)`, `clones(repo_id, date, total, unique)`: primary key `(repo_id, date)`.
   - `paths(repo_id, path, date, total, unique)`: primary key `(repo_id, path, date)`.
   - `referrers(repo_id, referrer, date, total, unique)`: primary key `(repo_id, referrer, date)`.
-  - `repo_id` is an integer, `date` an ISO `YYYY-MM-DD` text, `total` and `unique` integers.
+  - `repo_id` is an integer, `date` an ISO `YYYY-MM-DD` text, `total` an integer. `unique` is an integer, nullable in `paths` and `referrers` (the CSV exports have no unique counts there); charts treat null as "no data", not 0.
   - For `paths` and `referrers`, `date` is the day the job ran (the Supabase tables filled it by a column default; D1 gets it explicitly from the job).
 - Migrations with drizzle-kit in `drizzle/`, applied with `wrangler d1 migrations apply`.
 - In the Worker, `lib/db/client.ts` returns a Drizzle client over the `DB` binding (`getCloudflareContext().env.DB`).
@@ -83,6 +83,22 @@ Repohistory is a personal fork used by one person (the owner). Today it runs on 
 - Each page that reads one repository gets an installation Octokit for that repository's owner: `GET /repos/{owner}/{repo}/installation`, then `app.getInstallationOctokit(id)`. `getUserOctokit` is replaced by this.
 - A shared function wraps GitHub calls with a time limit, per `external-requests.md`; Octokit's retry and throttling plugins stay as they are.
 
+### History import
+
+The owner has CSV exports from repohistory.com, one folder per repository, each with four files:
+
+- `views.csv`, `clones.csv`: `Date,Total …,Unique …`, one row per day.
+- `popular-content.csv`, `referrers.csv`: wide format, one row per day and one column per path or referrer (the daily top-10 snapshot, the same thing the daily job stores). Cells hold the total count. A 0 means "not in that day's top 10" and is skipped. `unique` is stored as null.
+
+A script `scripts/import-csv.ts --repo <owner>/<name> --dir <folder>`:
+
+- resolves `repo_id` through the GitHub App (`GET /repos/{owner}/{repo}` with an installation Octokit);
+- parses the four files (header row names the columns; missing files are skipped with a message);
+- upserts through the same D1 HTTP client as the daily job, in batches, so re-running it changes nothing;
+- prints how many rows it wrote per table.
+
+The owner runs it once per repository (`dvasyliev/react-crash-course` now, the chatbot and the React todo list later). Export folders live in `imports/`, which is gitignored. The exports end on the day they were made; the daily job fills days after that.
+
 ### Dates
 
 The old job stored GitHub timestamps (`2025-06-22T00:00:00Z`) while the pages look days up as `YYYY-MM-DD`, so stored history older than 14 days never reached the charts. D1 stores `YYYY-MM-DD` and the job converts GitHub timestamps before writing, so stored history now shows. This is a bug fix, not a change in what the dashboards are meant to show.
@@ -98,12 +114,12 @@ Before moving any data code, build the current app with OpenNext and deploy it t
 ### Docs
 
 - `.env.example` lists every variable for local dev, the Worker and Actions.
-- README gets a short "Fork" note (AGPL) and a "Deploy to Cloudflare" section: create D1, apply migrations, set Worker secrets, set Actions secrets, deploy.
+- README gets a short "Fork" note (AGPL) and a "Deploy to Cloudflare" section: create D1, apply migrations, set Worker secrets, set Actions secrets, deploy, import CSV history.
 - `CLAUDE.md` "What this is" and "Architecture" are updated to the new stack.
 
 ## Testing
 
-- Unit (Vitest): token comparison and session cookie value; the D1 HTTP client (retries only 429/5xx, gives up after 3 tries, respects `Retry-After`); the upsert row building in `update-traffic` (timestamps become `YYYY-MM-DD`); the merge logic in `lib/repo/views.ts` against a fake client (stored days older than 14 show).
+- Unit (Vitest): CSV parsing for both formats (narrow views/clones, wide paths/referrers with zero cells skipped); token comparison and session cookie value; the D1 HTTP client (retries only 429/5xx, gives up after 3 tries, respects `Retry-After`); the upsert row building in `update-traffic` (timestamps become `YYYY-MM-DD`); the merge logic in `lib/repo/views.ts` against a fake client (stored days older than 14 show).
 - End-to-end (Playwright, happy paths): signing in with the right token reaches the dashboard; a wrong token shows the error; `/star-history` opens without signing in.
 - Manual after deploy: dashboard, owner and repo pages load on the Worker; `wrangler tail` shows no CPU-limit errors; the GitHub Action run writes rows (D1 row counts grow).
 
