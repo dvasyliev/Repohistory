@@ -1,8 +1,8 @@
 import "@/lib/env-config";
-import { app } from "@/lib/octokit/app";
+import { getApp } from "@/lib/octokit/app";
 import { updateTraffic } from "./update-traffic";
 
-await app.eachInstallation(async ({ installation }) => {
+await getApp().eachInstallation(async ({ installation }) => {
   if (installation.suspended_at) {
     return;
   }

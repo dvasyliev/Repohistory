@@ -1,4 +1,4 @@
-import { app } from "@/lib/octokit/app";
+import { getApp } from "@/lib/octokit/app";
 import { createClient } from "@supabase/supabase-js";
 
 export async function updateTraffic(installationId: number) {
@@ -7,8 +7,8 @@ export async function updateTraffic(installationId: number) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  const octokit = await app.getInstallationOctokit(installationId);
-  await app.eachRepository({ installationId }, async ({ repository }) => {
+  const octokit = await getApp().getInstallationOctokit(installationId);
+  await getApp().eachRepository({ installationId }, async ({ repository }) => {
     // console.log(repository.full_name, 'start')
 
     try {

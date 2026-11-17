@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { app } from "@/lib/octokit/app";
+import { getApp } from "@/lib/octokit/app";
 import { JSDOM } from "jsdom";
 import type { Config } from "svgo";
 import { optimize } from "svgo";
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       throw new Error("Invalid repository format. Use owner/repo");
     }
 
-    const appOctokit = app.octokit;
+    const appOctokit = getApp().octokit;
     const { data: installations } =
       await appOctokit.rest.apps.listInstallations();
 
@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
 
     const randomInstallation =
       installations[Math.floor(Math.random() * installations.length)];
-    const octokit = await app.getInstallationOctokit(randomInstallation.id);
+    const octokit = await getApp().getInstallationOctokit(
+      randomInstallation.id,
+    );
 
     const repoInfo = await getRepoInfo(octokit, owner, repo);
 

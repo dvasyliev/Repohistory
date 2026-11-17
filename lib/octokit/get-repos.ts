@@ -1,6 +1,6 @@
 import type { Repo } from "@/lib/types";
 import type { Octokit } from "octokit";
-import { app } from "./app";
+import { getApp } from "./app";
 
 export async function getRepos(octokit: Octokit) {
   const { data: installationData } = await octokit.request(
@@ -17,7 +17,7 @@ export async function getRepos(octokit: Octokit) {
   await Promise.all(
     installations.map(async (installation) => {
       const ownerRepos: Repo[] = [];
-      await app.eachRepository(
+      await getApp().eachRepository(
         { installationId: installation.id },
         ({ repository }) => {
           const repo = { ...repository, id: Number(repository.id) };

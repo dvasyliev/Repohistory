@@ -12,12 +12,17 @@
     "server-only"
   ],
   "ignore": [
-    ".claude/**"
+    ".claude/**",
+    ".open-next/**",
+    ".wrangler/**"
   ],
   "ignoreIssues": {
     "app/components/ui/**": [
       "exports",
       "types"
     ]
-  }
+  },
+  "entry": [
+    "open-next.config.ts"
+  ]
 }

@@ -1,3 +1,4 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -22,3 +23,8 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// The Cloudflare bindings proxy keeps the process alive, so only `next dev` starts it.
+if (process.argv.includes("dev")) {
+  void initOpenNextCloudflareForDev();
+}

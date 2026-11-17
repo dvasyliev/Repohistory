@@ -131,6 +131,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Claude Code's own files, not the app's code.
     ".claude/**",
+    // Cloudflare build output and local state.
+    ".open-next/**",
+    ".wrangler/**",
+    "cloudflare-env.d.ts",
   ]),
 ]);
 
