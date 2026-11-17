@@ -1,12 +1,12 @@
 import type { Repo } from "@/lib/types";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
+import { getInstallationOctokit } from "@/lib/octokit/installation";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { RepoPreviewChart } from "./repo-preview-chart";
 import { TrendIndicator } from "@/app/components/charts/trend-indicator";
 
 export async function RepoCardContent({ repo }: { repo: Repo }) {
-  const octokit = await getUserOctokit();
   const [owner, repoName] = repo.full_name.split("/");
+  const octokit = await getInstallationOctokit(owner);
 
   let githubViews;
   try {

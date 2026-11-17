@@ -10,7 +10,7 @@ import { getRepoClones } from "@/lib/repo/clones";
 import { getRepoReferrers } from "@/lib/repo/referrers";
 import { getRepoPaths } from "@/lib/repo/paths";
 import { getRepoReleases } from "@/lib/repo/releases";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
+import { getInstallationOctokit } from "@/lib/octokit/installation";
 import type { Db } from "@/lib/db/client";
 
 interface StarsChartWrapperProps {
@@ -22,7 +22,7 @@ export async function StarsChartWrapper({
   fullName,
   stargazersCount,
 }: StarsChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const stars = await getRepoStars(octokit, {
     fullName,
     stargazersCount,
@@ -41,7 +41,7 @@ export async function ViewChartWrapper({
   repoId,
   db,
 }: ViewChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const views = await getRepoViews(octokit, db, fullName, repoId);
   return <ViewChart traffic={{ views }} />;
 }
@@ -57,7 +57,7 @@ export async function CloneChartWrapper({
   repoId,
   db,
 }: CloneChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const clones = await getRepoClones(octokit, db, fullName, repoId);
   return <CloneChart traffic={{ clones }} />;
 }
@@ -73,7 +73,7 @@ export async function ReferrersChartWrapper({
   repoId,
   db,
 }: ReferrersChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const { referrers } = await getRepoReferrers(octokit, db, fullName, repoId);
   return <ReferrersChart traffic={{ referrers }} />;
 }
@@ -89,7 +89,7 @@ export async function PopularContentChartWrapper({
   repoId,
   db,
 }: PopularContentChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const { paths } = await getRepoPaths(octokit, db, fullName, repoId);
   return <PopularContentChart traffic={{ paths }} />;
 }
@@ -101,7 +101,7 @@ interface ReleaseChartWrapperProps {
 export async function ReleaseChartWrapper({
   fullName,
 }: ReleaseChartWrapperProps) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
   const [owner, repo] = fullName.split("/");
   const releases = await getRepoReleases(octokit, owner, repo);
   return <ReleaseChart releasesData={releases} />;

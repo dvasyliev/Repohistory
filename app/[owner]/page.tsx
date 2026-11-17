@@ -8,7 +8,6 @@ import {
   OwnerPopularContentChartWrapper,
 } from "@/app/components/charts/owner-chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
 import { getRepos } from "@/lib/octokit/get-repos";
 import { getDb } from "@/lib/db/client";
 import { redirect } from "next/navigation";
@@ -25,8 +24,7 @@ interface PageProps {
 }
 
 export default async function OwnerPage({ params }: PageProps) {
-  const octokit = await getUserOctokit();
-  const { reposByOwner } = await getRepos(octokit);
+  const { reposByOwner } = await getRepos();
 
   const { owner } = await params;
   const ownerRepos = reposByOwner[owner];

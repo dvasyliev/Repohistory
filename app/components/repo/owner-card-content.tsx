@@ -1,5 +1,5 @@
 import type { Repo } from "@/lib/types";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
+import { getInstallationOctokit } from "@/lib/octokit/installation";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { RepoPreviewChart } from "./repo-preview-chart";
 import { TrendIndicator } from "@/app/components/charts/trend-indicator";
@@ -68,7 +68,9 @@ function aggregateViewData(allRepoViews: ViewData[][]): ViewData[] {
 }
 
 export async function OwnerCardContent({ repos }: { repos: Repo[] }) {
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(
+    repos[0].full_name.split("/")[0],
+  );
   const allRepoViews = await Promise.all(
     repos.map((repo) => fetchRepoViews(repo, octokit)),
   );

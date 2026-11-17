@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
+import { getInstallationOctokit } from "@/lib/octokit/installation";
+import { isHTTPAccessFallbackError } from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { getDb } from "@/lib/db/client";
 import { getRepoViews } from "@/lib/repo/views";
 import { getRepoClones } from "@/lib/repo/clones";
@@ -23,7 +24,15 @@ export async function GET(
       return new NextResponse("Invalid parameters", { status: 400 });
     }
 
-    const octokit = await getUserOctokit();
+    let octokit;
+    try {
+      octokit = await getInstallationOctokit(fullName.split("/")[0]);
+    } catch (error) {
+      if (isHTTPAccessFallbackError(error)) {
+        return new NextResponse("Not found", { status: 404 });
+      }
+      throw error;
+    }
     const db = getDb();
 
     // Fetch all data in parallel

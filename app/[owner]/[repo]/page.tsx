@@ -11,7 +11,7 @@ import {
 } from "@/app/components/charts/chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
 import { getRepoInfo } from "@/lib/repo/info";
-import { getUserOctokit } from "@/lib/octokit/get-user-octokit";
+import { getInstallationOctokit } from "@/lib/octokit/installation";
 import { getDb } from "@/lib/db/client";
 import { StarsChart } from "@/app/components/charts/stars-chart";
 import { ViewChart } from "@/app/components/charts/view-chart";
@@ -46,7 +46,7 @@ export default async function RepoPage({ params }: PageProps) {
 
   const db = getDb();
   const fullName = `${owner}/${repo}`;
-  const octokit = await getUserOctokit();
+  const octokit = await getInstallationOctokit(owner);
   const repoInfo = await getRepoInfo(octokit, owner, repo);
 
   return (
