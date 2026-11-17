@@ -2,22 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What this is
 
-Repohistory is a Next.js web application that provides an open-source dashboard for tracking GitHub repository traffic history beyond the default 14-day limit. The application integrates with GitHub OAuth and Supabase for authentication and data persistence.
+Repohistory is a personal fork of the open-source Repohistory dashboard (AGPL-3.0). It keeps GitHub repository traffic (views, clones, popular paths, referrers) beyond GitHub's 14-day limit and shows it with stars and releases as charts. Stack: Next.js 15 App Router, React 19, TypeScript, Tailwind CSS 4, shadcn/ui on Radix, Recharts and D3, Octokit with a GitHub App. Storage and sign-in are Supabase today (GitHub OAuth plus Postgres tables `views`, `clones`, `paths`, `referrers`).
 
-## Package Manager
+## Architecture
 
-This project uses npm as the package manager.
-
-## Key Components Structure
-
-- `app/(dashboard)/` - Protected dashboard pages
-- `app/components/charts/` - Chart components using D3 and Recharts
-- `app/components/repo/` - Repository-related UI components
-- `app/components/ui/` - Shadcn/ui components (button, card, tooltip, etc.)
-- `lib/supabase/` - Supabase client utilities
-- `lib/octokit/` - GitHub API integration
+- **Data sources:** GitHub returns only the last 14 days of traffic. A daily GitHub Actions job (`.github/workflows/cron.yaml` running `lib/cron.ts`) walks every GitHub App installation and upserts traffic into the database (`lib/update-traffic.ts`). Pages merge the stored history with the live GitHub API response (`lib/repo/*.ts`).
+- **GitHub access:** the GitHub App (`lib/octokit/app.ts`, `APP_ID` and `APP_PRIVATE_KEY`) lists installations and repositories; the signed-in user's GitHub token (cookie `provider_token`, `lib/octokit/get-user-octokit.ts`) is used for per-user calls.
+- **Auth:** `middleware.ts` redirects to `/signin` when there is no Supabase session (`lib/supabase/`).
+- **Folders:** routes in `app/` (`(dashboard)` is the home grid, `[owner]` and `[owner]/[repo]` the dashboards, `star-history` the public star chart generator, `api/` the SVG and CSV export); shared components in `app/components/` (`charts`, `repo`, `layout`, `ui`); data fetching, GitHub and database code in `lib/`. `lib/shared/` is code adapted from Star History (MIT, see its license notice; keep it).
+- **Never:** remove `LICENSE` or the Star History notice; commit secrets (`.env*` is ignored).
 
 ## UI Components
 

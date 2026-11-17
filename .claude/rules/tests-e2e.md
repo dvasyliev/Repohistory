@@ -1,0 +1,15 @@
+---
+paths:
+  - "tests/**"
+  - "playwright.config.ts"
+---
+
+# End-to-end tests
+
+- End-to-end tests live in `tests/<feature>/<scenario>.spec.ts`, one per file, written with the `playwright-cli` skill starting from `tests/seed.spec.ts`. Assertions come from the plan's `- expect:` lines. Use `getByRole`, `getByLabel`, `getByTestId`, never CSS selectors. A `name` given as a string matches any name that contains it, so find a button or link by its whole name (`exact: true`, or a regex with `^…$`): a later element whose name includes it would make the locator match two.
+- Specs import `test` and `expect` from `tests/fixtures.ts`, not `@playwright/test`: after every `goto`, `reload` and `goBack` it waits until React has taken over every link, button and field, so no click lands before React handles it. After every `goto` it also checks the page with axe (WCAG 2.1 A and AA). A menu or dialog a test opens is not covered: once it is open, call `expectAccessible(page)` from `tests/fixtures.ts`.
+- `playwright.config.ts` reuses the running dev server (port from `PORT`, else the `port` in `.claude/harness.json`) and starts one only if none is running.
+- A click that saves shows its result at once, before the save has finished. Wait for its response (`page.waitForResponse`) before `goto` or `reload`, or the save can be dropped.
+- A passing run can still log errors. Save the whole output of every run to a file (`npx playwright test ... > <scratchpad>/e2e.log 2>&1`), never only its last lines or a `grep` for passed and failed, and search it for `Error`, `Invariant`, `Hydration`, `uncaughtException` and `[browser]`. For each error, find whether the change caused it: by the route, file or spec it names, or by running the same specs on the commit before. Fix the ones it caused; name the rest in the final report as not caused by it.
+- On macOS run the end-to-end tests under `caffeinate -dims`: a Mac that sleeps fails random tests. When a run takes far longer than usual and pages time out, check `pmset -g log` for sleep before looking for a bug.
+- The `pre-push` git hook runs `npm run verify` (under `caffeinate` on macOS); the push is cancelled if it fails. It skips the run when the code pushed is exactly the code a full `npm run verify` last passed on (`.githooks/verify.sh` keeps it in `.git/e2e-green`), so run the whole suite once before the last commit, not again for the push. The project's own pre-push steps go in an executable `.githooks/pre-push.local`, which the hook runs afterwards and the harness never overwrites.
