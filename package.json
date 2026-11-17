@@ -20,7 +20,10 @@
     "prepare": "git config core.hooksPath .githooks",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "cf-typegen": "wrangler types --include-runtime=false --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply repohistory --local",
+    "db:migrate:remote": "wrangler d1 migrations apply repohistory --remote",
     "secrets:push": "node scripts/push-secrets.mjs"
   },
   "dependencies": {
@@ -40,6 +43,7 @@
     "d3-selection": "^3.0.0",
     "d3-shape": "^3.2.0",
     "dayjs": "^1.11.13",
+    "drizzle-orm": "^0.45.4",
     "jszip": "^3.10.1",
     "linkedom": "^0.18.15",
     "lodash": "^4.17.21",
@@ -74,6 +78,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.3.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "^16.4.6",
     "eslint-config-prettier": "^10.1.8",
