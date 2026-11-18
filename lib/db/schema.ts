@@ -82,15 +82,3 @@ export const forks = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.repoId, t.date] })],
 );
-
-export const commitWeeks = sqliteTable(
-  "commit_weeks",
-  {
-    repoId: integer("repo_id").notNull(),
-    week: text("week").notNull(),
-    commits: integer("commits").notNull(),
-    additions: integer("additions").notNull(),
-    deletions: integer("deletions").notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.repoId, t.week] })],
-);

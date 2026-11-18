@@ -2,7 +2,6 @@ import { asc, eq, gte, inArray, and, sum } from "drizzle-orm";
 import type { Db } from "./client";
 import {
   clones,
-  commitWeeks,
   forks,
   paths,
   referrers,
@@ -125,12 +124,6 @@ export type CounterHistory = {
   forks: number;
   watchers: number;
 };
-export type CommitWeek = {
-  week: string;
-  commits: number;
-  additions: number;
-  deletions: number;
-};
 
 export async function getForkHistoryForRepos(
   db: Db,
@@ -161,23 +154,6 @@ export async function getCounterHistory(
     stars,
     forks,
     watchers,
-  }));
-}
-
-export async function getCommitWeeks(
-  db: Db,
-  repoId: number,
-): Promise<CommitWeek[]> {
-  const rows = await db
-    .select()
-    .from(commitWeeks)
-    .where(eq(commitWeeks.repoId, repoId))
-    .orderBy(asc(commitWeeks.week));
-  return rows.map(({ week, commits, additions, deletions }) => ({
-    week,
-    commits,
-    additions,
-    deletions,
   }));
 }
 

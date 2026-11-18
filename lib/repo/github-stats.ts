@@ -2,11 +2,7 @@ import type { Octokit } from "octokit";
 import type { CounterRow } from "@/lib/traffic-rows";
 
 type CommitActivity = { week: number; total: number };
-type CodeFrequency = [number, number, number];
-export type CommitStats = {
-  activity: CommitActivity[];
-  frequency: CodeFrequency[];
-};
+export type CommitWeek = { week: string; commits: number };
 
 const FORKS_PER_PAGE = 100;
 const MAX_FORK_PAGES = 30;
@@ -53,12 +49,15 @@ async function fetchStat<T>(
   return null;
 }
 
-export async function fetchCommitStats(
+const weekDate = (week: number) =>
+  new Date(week * 1000).toISOString().slice(0, 10);
+
+export async function fetchCommitWeeks(
   octokit: Octokit,
   owner: string,
   repo: string,
   sleep: (ms: number) => Promise<void> = wait,
-): Promise<CommitStats | null> {
+): Promise<CommitWeek[] | null> {
   const activity = await fetchStat<CommitActivity>(
     octokit,
     "GET /repos/{owner}/{repo}/stats/commit_activity",
@@ -66,15 +65,12 @@ export async function fetchCommitStats(
     repo,
     sleep,
   );
-  if (!activity) return null;
-  const frequency = await fetchStat<CodeFrequency>(
-    octokit,
-    "GET /repos/{owner}/{repo}/stats/code_frequency",
-    owner,
-    repo,
-    sleep,
+  return (
+    activity?.map(({ week, total }) => ({
+      week: weekDate(week),
+      commits: total,
+    })) ?? null
   );
-  return frequency ? { activity, frequency } : null;
 }
 
 export async function fetchCounters(

@@ -1,11 +1,11 @@
+import type { Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
 import {
-  getCommitWeeks,
   getCounterHistory,
   getForkHistoryForRepos,
-  type CommitWeek,
   type CounterHistory,
 } from "@/lib/db/traffic";
+import { fetchCommitWeeks, type CommitWeek } from "@/lib/repo/github-stats";
 import type { Repo } from "@/lib/types";
 import { toCumulativeDays } from "./stars";
 
@@ -62,13 +62,14 @@ export async function getRepoCounters(
 }
 
 export async function getRepoCommitWeeks(
-  db: Db,
-  repoId: number,
-): Promise<CommitWeek[]> {
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+): Promise<CommitWeek[] | null> {
   try {
-    return await getCommitWeeks(db, repoId);
+    return await fetchCommitWeeks(octokit, owner, repo);
   } catch (error) {
-    console.error("Error fetching commit activity from D1:", error);
+    console.error("Error fetching commit activity from GitHub:", error);
     return [];
   }
 }

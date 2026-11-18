@@ -61,7 +61,7 @@ export default async function RepoPage({ params }: PageProps) {
       stargazersCount: repoInfo.stargazers_count,
     }),
     forks: getRepoForks(db, repoInfo.id),
-    commits: getRepoCommitWeeks(db, repoInfo.id),
+    commits: getRepoCommitWeeks(octokit, owner, repo),
     counters: getRepoCounters(db, repoInfo.id),
   };
 

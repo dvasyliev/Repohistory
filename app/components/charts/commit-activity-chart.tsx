@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Bar, Line } from "recharts";
+import { Bar } from "recharts";
 import {
   Card,
   CardContent,
@@ -14,20 +14,15 @@ import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
 import { useDateFiltered } from "./use-date-filtered";
-import type { CommitWeek } from "@/lib/db/traffic";
+import type { CommitWeek } from "@/lib/repo/github-stats";
 
 interface CommitActivityChartProps {
-  weeks?: CommitWeek[];
+  weeks?: CommitWeek[] | null;
   isLoading?: boolean;
 }
 
 const commitsConfig = {
   commits: { label: "Commits", color: "#62C3F8" },
-} satisfies ChartConfig;
-
-const linesConfig = {
-  additions: { label: "Additions", color: "#2da44e" },
-  deletions: { label: "Deletions", color: "#e5484d" },
 } satisfies ChartConfig;
 
 const EMPTY: CommitWeek[] = [];
@@ -37,7 +32,7 @@ export function CommitActivityChart({
   isLoading = false,
 }: CommitActivityChartProps) {
   const data = useMemo(
-    () => weeks.map(({ week, ...rest }) => ({ date: week, ...rest })),
+    () => (weeks ?? []).map(({ week, commits }) => ({ date: week, commits })),
     [weeks],
   );
   const filteredData = useDateFiltered(data);
@@ -53,9 +48,7 @@ export function CommitActivityChart({
           <CardTitle role="heading" aria-level={2}>
             Commit Activity
           </CardTitle>
-          <CardDescription>
-            Weekly commits, additions and deletions
-          </CardDescription>
+          <CardDescription>Weekly commits in the last year</CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-xs text-muted-foreground">Total Commits</span>
@@ -68,43 +61,24 @@ export function CommitActivityChart({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 pl-0">
-        {isLoading || filteredData.length > 0 ? (
-          <>
-            <Chart
-              data={isLoading ? [] : filteredData}
-              chartConfig={commitsConfig}
-              className="h-64 w-full"
-              isLoading={isLoading}
-            >
-              <Bar
-                isAnimationActive={false}
-                dataKey="commits"
-                fill="var(--color-commits)"
-              />
-            </Chart>
-            <Chart
-              data={isLoading ? [] : filteredData}
-              chartConfig={linesConfig}
-              className="h-48 w-full"
-              isLoading={isLoading}
-            >
-              <Line
-                isAnimationActive={false}
-                dataKey="additions"
-                stroke="var(--color-additions)"
-                strokeWidth={2}
-                dot={false}
-              />
-              <Line
-                isAnimationActive={false}
-                dataKey="deletions"
-                stroke="var(--color-deletions)"
-                strokeWidth={2}
-                dot={false}
-              />
-            </Chart>
-          </>
+      <CardContent className="pl-0">
+        {weeks === null ? (
+          <div className="flex h-64 items-center justify-center text-muted-foreground">
+            GitHub is still counting commits. Reload in a minute.
+          </div>
+        ) : isLoading || filteredData.length > 0 ? (
+          <Chart
+            data={isLoading ? [] : filteredData}
+            chartConfig={commitsConfig}
+            className="h-64 w-full"
+            isLoading={isLoading}
+          >
+            <Bar
+              isAnimationActive={false}
+              dataKey="commits"
+              fill="var(--color-commits)"
+            />
+          </Chart>
         ) : (
           <NoDataMessage dataType="commit activity" />
         )}

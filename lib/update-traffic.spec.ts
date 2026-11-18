@@ -94,7 +94,6 @@ describe("updateTraffic", () => {
     const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
     expect(rows.stars).toEqual({ repoId: 7, rows: [] });
     expect(rows.forks).toEqual({ repoId: 7, rows: [] });
-    expect(rows.commitWeeks).toEqual({ activity: [], frequency: [] });
     expect(rows.counters).toEqual([
       {
         repoId: 7,
@@ -123,7 +122,6 @@ describe("updateTraffic", () => {
     const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
     expect(rows.views).toHaveLength(1);
     expect(rows.forks).toBeUndefined();
-    expect(rows.commitWeeks).toBeDefined();
   });
 
   it("skips counters and logs when the repo fetch fails", async () => {
@@ -141,22 +139,5 @@ describe("updateTraffic", () => {
     );
     const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
     expect(rows.counters).toBeUndefined();
-  });
-
-  it("skips commit weeks when the stats are still computing", async () => {
-    vi.useFakeTimers();
-    const app = fakeApp(
-      route({
-        "GET /repos/{owner}/{repo}/stats/commit_activity": () =>
-          Promise.resolve({ status: 202, data: {} }),
-      }),
-    );
-    const done = updateTraffic(app, 1, {} as Db);
-    await vi.runAllTimersAsync();
-    await done;
-    vi.useRealTimers();
-
-    const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
-    expect(rows.commitWeeks).toBeUndefined();
   });
 });

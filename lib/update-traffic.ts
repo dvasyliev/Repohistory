@@ -1,20 +1,13 @@
 import type { App, Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
-import {
-  fetchCommitStats,
-  fetchCounters,
-  fetchForkDates,
-} from "@/lib/repo/github-stats";
+import { fetchCounters, fetchForkDates } from "@/lib/repo/github-stats";
 import { fetchStarWeeks } from "@/lib/repo/stars";
 import {
-  toCodeFrequencyRows,
-  toCommitActivityRows,
   toDailyRows,
   toForkRows,
   toPathRows,
   toReferrerRows,
   toStarRows,
-  type CommitWeekRow,
   type CounterRow,
   type ForkRow,
   type StarRow,
@@ -70,22 +63,6 @@ const fetchForkRows = (
     ),
   );
 
-const fetchCommitWeekRows = (
-  octokit: Octokit,
-  fullName: string,
-  params: { owner: string; repo: string },
-  repoId: number,
-): Promise<{ activity: CommitWeekRow[]; frequency: CommitWeekRow[] } | null> =>
-  orNull(fullName, "commits", async () => {
-    const stats = await fetchCommitStats(octokit, params.owner, params.repo);
-    return stats
-      ? {
-          activity: toCommitActivityRows(repoId, stats.activity),
-          frequency: toCodeFrequencyRows(repoId, stats.frequency),
-        }
-      : null;
-  });
-
 export async function updateTraffic(app: App, installationId: number, db: Db) {
   const octokit = await app.getInstallationOctokit(installationId);
   const today = new Date().toISOString().slice(0, 10);
@@ -118,12 +95,6 @@ export async function updateTraffic(app: App, installationId: number, db: Db) {
         params,
         repoId,
       );
-      const commitRows = await fetchCommitWeekRows(
-        octokit,
-        repository.full_name,
-        params,
-        repoId,
-      );
 
       await upsertTraffic(db, {
         views: toDailyRows(repoId, viewsData.views),
@@ -133,7 +104,6 @@ export async function updateTraffic(app: App, installationId: number, db: Db) {
         stars: starRows ? { repoId, rows: starRows } : undefined,
         counters: counterRows ?? undefined,
         forks: forkRows ? { repoId, rows: forkRows } : undefined,
-        commitWeeks: commitRows ?? undefined,
       });
     } catch (error) {
       console.error(

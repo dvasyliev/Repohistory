@@ -9,7 +9,8 @@ import { ForksChart } from "@/app/components/charts/forks-chart";
 import { WatchersChart } from "@/app/components/charts/watchers-chart";
 import { CommitActivityChart } from "@/app/components/charts/commit-activity-chart";
 import type { DateRange } from "@/lib/contexts/date-range-context";
-import type { CommitWeek, CounterHistory } from "@/lib/db/traffic";
+import type { CounterHistory } from "@/lib/db/traffic";
+import type { CommitWeek } from "@/lib/repo/github-stats";
 import type { RepoStarsData } from "@/lib/repo/stars";
 import type { ForkDay } from "@/lib/repo/repo-stats";
 import {
@@ -30,7 +31,7 @@ export interface RepoInsightsData {
   clones: Promise<{ count: number; uniques: number; clones: Traffic[] }>;
   stars: Promise<RepoStarsData>;
   forks: Promise<ForkDay[]>;
-  commits: Promise<CommitWeek[]>;
+  commits: Promise<CommitWeek[] | null>;
   counters: Promise<CounterHistory[]>;
 }
 
@@ -158,7 +159,7 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
           data={data.commits}
           summarize={(weeks, range) =>
             sumInRange(
-              weeks.map(({ week, commits }) => ({
+              (weeks ?? []).map(({ week, commits }) => ({
                 date: week,
                 value: commits,
               })),

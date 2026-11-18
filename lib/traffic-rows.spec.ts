@@ -4,8 +4,6 @@ import * as schema from "./db/schema";
 import {
   toDailyRows,
   toPathRows,
-  toCodeFrequencyRows,
-  toCommitActivityRows,
   toForkRows,
   toReferrerRows,
   toStarRows,
@@ -105,28 +103,6 @@ describe("toForkRows", () => {
     ).toEqual([
       { repoId: 1, date: "2026-11-01", count: 2 },
       { repoId: 1, date: "2026-11-03", count: 1 },
-    ]);
-  });
-});
-
-describe("commit week rows", () => {
-  const week = Date.UTC(2026, 10, 1) / 1000;
-
-  it("maps commit activity with zero line counts", () => {
-    expect(toCommitActivityRows(1, [{ week, total: 5 }])).toEqual([
-      { repoId: 1, week: "2026-11-01", commits: 5, additions: 0, deletions: 0 },
-    ]);
-  });
-
-  it("maps code frequency with positive deletions and zero commits", () => {
-    expect(toCodeFrequencyRows(1, [[week, 120, -30]])).toEqual([
-      {
-        repoId: 1,
-        week: "2026-11-01",
-        commits: 0,
-        additions: 120,
-        deletions: 30,
-      },
     ]);
   });
 });
@@ -274,44 +250,6 @@ describe("upsertTraffic", () => {
     ]);
   });
 
-  it("upserts commit weeks by column without deleting", async () => {
-    const { db, batches } = recordingDb();
-    const row = (i: number) => ({
-      repoId: 4,
-      week: `2025-01-${String(i).padStart(3, "0")}`,
-      commits: i,
-      additions: 1,
-      deletions: 1,
-    });
-    await upsertTraffic(db, {
-      views: [],
-      clones: [],
-      paths: [],
-      referrers: [],
-      commitWeeks: {
-        activity: Array.from({ length: 21 }, (_, i) => row(i)),
-        frequency: [row(1)],
-      },
-    });
-    const statements = batches[0];
-    expect(statements.some((s) => s.sql.startsWith("delete"))).toBe(false);
-    expect(statements.map((s) => s.params.length / 5)).toEqual([20, 1, 1]);
-    expect(statements.every((s) => s.params.length <= 100)).toBe(true);
-    const update = (sql: string) => sql.slice(sql.indexOf("do update set"));
-    for (const s of statements.slice(0, 2)) {
-      expect(update(s.sql)).toContain('"commits" = excluded.commits');
-      expect(update(s.sql)).not.toContain("additions");
-      expect(update(s.sql)).not.toContain("deletions");
-    }
-    expect(update(statements[2].sql)).toContain(
-      '"additions" = excluded.additions',
-    );
-    expect(update(statements[2].sql)).toContain(
-      '"deletions" = excluded.deletions',
-    );
-    expect(update(statements[2].sql)).not.toContain("commits");
-  });
-
   it("upserts counters in chunks of 16 rows", async () => {
     const { db, batches } = recordingDb();
     await upsertTraffic(db, {
@@ -332,7 +270,7 @@ describe("upsertTraffic", () => {
     expect(batches[0].every((s) => s.params.length <= 100)).toBe(true);
   });
 
-  it("keeps stored forks and commit weeks when none are given", async () => {
+  it("keeps stored forks when none are given", async () => {
     const { db, batches } = recordingDb();
     await upsertTraffic(db, {
       views: daily(1),
@@ -342,6 +280,5 @@ describe("upsertTraffic", () => {
     });
     const sql = batches[0].map((s) => s.sql).join();
     expect(sql).not.toContain("forks");
-    expect(sql).not.toContain("commit_weeks");
   });
 });

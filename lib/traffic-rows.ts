@@ -2,7 +2,6 @@ import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
 import {
   clones,
-  commitWeeks,
   forks,
   paths,
   referrers,
@@ -19,7 +18,6 @@ export type ReferrerRow = typeof referrers.$inferInsert;
 export type StarRow = typeof stars.$inferInsert;
 export type CounterRow = typeof repoCounters.$inferInsert;
 export type ForkRow = typeof forks.$inferInsert;
-export type CommitWeekRow = typeof commitWeeks.$inferInsert;
 
 type Counts = { count: number; uniques: number };
 
@@ -91,35 +89,6 @@ export function toForkRows(repoId: number, createdAt: string[]): ForkRow[] {
   return Array.from(counts, ([date, count]) => ({ repoId, date, count }));
 }
 
-const weekDate = (week: number) =>
-  new Date(week * 1000).toISOString().slice(0, 10);
-
-export function toCommitActivityRows(
-  repoId: number,
-  activity: { week: number; total: number }[],
-): CommitWeekRow[] {
-  return activity.map(({ week, total }) => ({
-    repoId,
-    week: weekDate(week),
-    commits: total,
-    additions: 0,
-    deletions: 0,
-  }));
-}
-
-export function toCodeFrequencyRows(
-  repoId: number,
-  frequency: [number, number, number][],
-): CommitWeekRow[] {
-  return frequency.map(([week, additions, deletions]) => ({
-    repoId,
-    week: weekDate(week),
-    commits: 0,
-    additions,
-    deletions: Math.abs(deletions),
-  }));
-}
-
 const ROWS_PER_STATEMENT = 20;
 const COUNTER_ROWS_PER_STATEMENT = 16;
 const ROWS_PER_BATCH = 500;
@@ -143,7 +112,6 @@ export async function upsertTraffic(
     stars?: { repoId: number; rows: StarRow[] };
     counters?: CounterRow[];
     forks?: { repoId: number; rows: ForkRow[] };
-    commitWeeks?: { activity: CommitWeekRow[]; frequency: CommitWeekRow[] };
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
@@ -201,29 +169,6 @@ export async function upsertTraffic(
           target: [forks.repoId, forks.date],
           set: { count: sql`excluded.count` },
         }),
-    ),
-    ...chunk(rows.commitWeeks?.activity ?? [], ROWS_PER_STATEMENT).map(
-      (values) =>
-        db
-          .insert(commitWeeks)
-          .values(values)
-          .onConflictDoUpdate({
-            target: [commitWeeks.repoId, commitWeeks.week],
-            set: { commits: sql`excluded.commits` },
-          }),
-    ),
-    ...chunk(rows.commitWeeks?.frequency ?? [], ROWS_PER_STATEMENT).map(
-      (values) =>
-        db
-          .insert(commitWeeks)
-          .values(values)
-          .onConflictDoUpdate({
-            target: [commitWeeks.repoId, commitWeeks.week],
-            set: {
-              additions: sql`excluded.additions`,
-              deletions: sql`excluded.deletions`,
-            },
-          }),
     ),
     ...chunk(rows.counters ?? [], COUNTER_ROWS_PER_STATEMENT).map((values) =>
       db

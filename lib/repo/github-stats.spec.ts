@@ -1,7 +1,7 @@
 import type { Octokit } from "octokit";
 import { describe, expect, it, vi } from "vitest";
 import {
-  fetchCommitStats,
+  fetchCommitWeeks,
   fetchCounters,
   fetchForkDates,
 } from "./github-stats";
@@ -17,49 +17,39 @@ function fakeOctokit(replies: Record<string, Reply[]>) {
 }
 
 const activityRoute = "GET /repos/{owner}/{repo}/stats/commit_activity";
-const frequencyRoute = "GET /repos/{owner}/{repo}/stats/code_frequency";
 
-describe("fetchCommitStats", () => {
-  const activity = [{ week: 1, total: 2 }];
-  const frequency = [[1, 3, -4]];
+describe("fetchCommitWeeks", () => {
+  const week = Date.UTC(2026, 10, 1) / 1000;
+  const activity = [{ week, total: 2 }];
 
-  it("retries once after a 202 and returns the data", async () => {
+  it("retries once after a 202 and returns commits by week", async () => {
     const { octokit } = fakeOctokit({
       [activityRoute]: [
         { status: 202, data: {} },
         { status: 200, data: activity },
       ],
-      [frequencyRoute]: [{ status: 200, data: frequency }],
     });
     const sleep = vi.fn(() => Promise.resolve());
-    expect(await fetchCommitStats(octokit, "o", "r", sleep)).toEqual({
-      activity,
-      frequency,
-    });
+    expect(await fetchCommitWeeks(octokit, "o", "r", sleep)).toEqual([
+      { week: "2026-11-01", commits: 2 },
+    ]);
     expect(sleep).toHaveBeenCalledWith(3000);
   });
 
   it("returns null when still 202 after the retry", async () => {
     const { octokit, request } = fakeOctokit({
       [activityRoute]: [{ status: 202, data: {} }],
-      [frequencyRoute]: [{ status: 200, data: frequency }],
     });
     const sleep = vi.fn(() => Promise.resolve());
-    expect(await fetchCommitStats(octokit, "o", "r", sleep)).toBeNull();
-    expect(
-      request.mock.calls.filter(([route]) => route === activityRoute),
-    ).toHaveLength(2);
-    expect(request.mock.calls.map(([route]) => route)).not.toContain(
-      frequencyRoute,
-    );
+    expect(await fetchCommitWeeks(octokit, "o", "r", sleep)).toBeNull();
+    expect(request).toHaveBeenCalledTimes(2);
   });
 
   it("returns null when a 200 body is not an array", async () => {
     const { octokit } = fakeOctokit({
       [activityRoute]: [{ status: 200, data: {} }],
-      [frequencyRoute]: [{ status: 200, data: frequency }],
     });
-    expect(await fetchCommitStats(octokit, "o", "r")).toBeNull();
+    expect(await fetchCommitWeeks(octokit, "o", "r")).toBeNull();
   });
 });
 
