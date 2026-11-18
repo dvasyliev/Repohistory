@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-// The Cloudflare bindings proxy keeps the process alive, so only `next dev` starts it.
-if (process.argv.includes("dev")) {
+// The Cloudflare bindings proxy keeps the process alive, so only the dev server (parent and server process) starts it.
+if (process.env.NODE_ENV === "development") {
   void initOpenNextCloudflareForDev();
 }
