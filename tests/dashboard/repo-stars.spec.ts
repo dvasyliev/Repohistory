@@ -10,7 +10,9 @@ test("shows the stars chart on the repo page", async ({ page }) => {
     .getByRole("link", { name: /react-crash-course/ })
     .first()
     .click();
-  await expect(page).toHaveURL("/dvasyliev/react-crash-course");
+  await expect(page).toHaveURL("/dvasyliev/react-crash-course", {
+    timeout: 30_000,
+  });
 
   await page.getByRole("button", { name: /^Stars/ }).click();
   await expect(

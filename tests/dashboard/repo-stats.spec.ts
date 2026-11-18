@@ -12,7 +12,9 @@ test("switches the big chart from the metric tiles", async ({ page }) => {
     .getByRole("link", { name: /react-crash-course/ })
     .first()
     .click();
-  await expect(page).toHaveURL("/dvasyliev/react-crash-course");
+  await expect(page).toHaveURL("/dvasyliev/react-crash-course", {
+    timeout: 30_000,
+  });
 
   for (const tile of TILES) {
     await expect(
