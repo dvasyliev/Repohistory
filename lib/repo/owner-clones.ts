@@ -1,11 +1,9 @@
-import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoClones } from "./clones";
 import type { Db } from "@/lib/db/client";
 import { getDailyHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerClones(
-  octokit: Octokit,
   db: Db,
   repos: Repo[],
 ): Promise<{
@@ -25,7 +23,7 @@ export async function getOwnerClones(
   }
   const repoClonesPromises = repos.map((repo) =>
     getRepoClones(
-      octokit,
+      null,
       db,
       repo.full_name,
       repo.id,

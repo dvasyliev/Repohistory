@@ -3,7 +3,7 @@ import { getDailyHistory, type DailyHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
 
 export async function getRepoClones(
-  octokit: Octokit,
+  octokit: Octokit | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -19,7 +19,7 @@ export async function getRepoClones(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getDailyHistory(db, "clones", repoId),
-      octokit.rest.repos.getClones({ owner, repo }),
+      octokit?.rest.repos.getClones({ owner, repo }) ?? null,
     ]);
 
     // Process stored data
@@ -31,7 +31,7 @@ export async function getRepoClones(
 
     // Process GitHub data
     const githubData =
-      githubResult.status === "fulfilled"
+      githubResult.status === "fulfilled" && githubResult.value
         ? githubResult.value.data.clones?.map((item) => ({
             date: item.timestamp.split("T")[0],
             count: item.count,

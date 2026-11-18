@@ -53,24 +53,16 @@ export default async function OwnerPage({ params }: PageProps) {
             <OwnerStarsChartWrapper owner={owner} repos={ownerRepos} />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
-            <OwnerViewChartWrapper owner={owner} repos={ownerRepos} db={db} />
+            <OwnerViewChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<CloneChart isLoading />}>
-            <OwnerCloneChartWrapper owner={owner} repos={ownerRepos} db={db} />
+            <OwnerCloneChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<ReferrersChart isLoading />}>
-            <OwnerReferrersChartWrapper
-              owner={owner}
-              repos={ownerRepos}
-              db={db}
-            />
+            <OwnerReferrersChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<PopularContentChart isLoading />}>
-            <OwnerPopularContentChartWrapper
-              owner={owner}
-              repos={ownerRepos}
-              db={db}
-            />
+            <OwnerPopularContentChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
         </div>
       </div>

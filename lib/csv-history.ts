@@ -1,5 +1,14 @@
 import type { DailyRow, PathRow, ReferrerRow } from "@/lib/traffic-rows";
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function assertDate(date: string, line: number): string {
+  if (!ISO_DATE.test(date)) {
+    throw new Error(`Invalid date "${date}" on line ${line}`);
+  }
+  return date;
+}
+
 function parseCsv(text: string): string[][] {
   const records: string[][] = [];
   let record: string[] = [];
@@ -41,9 +50,9 @@ function parseCsv(text: string): string[][] {
 
 export function parseDailyCsv(text: string, repoId: number): DailyRow[] {
   const [, ...records] = parseCsv(text);
-  return records.map(([date, total, unique]) => ({
+  return records.map(([date, total, unique], index) => ({
     repoId,
-    date,
+    date: assertDate(date, index + 2),
     total: Number(total),
     unique: Number(unique),
   }));
@@ -66,7 +75,8 @@ export function parseWideCsv(
 ): PathRow[] | ReferrerRow[] {
   const [header, ...records] = parseCsv(text);
   const cells: { name: string; date: string; total: number }[] = [];
-  for (const [date, ...values] of records) {
+  for (const [index, [date, ...values]] of records.entries()) {
+    assertDate(date, index + 2);
     values.forEach((value, i) => {
       const total = Number(value);
       if (total !== 0) cells.push({ name: header[i + 1], date, total });

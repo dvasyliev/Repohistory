@@ -10,6 +10,7 @@ describe("isPublicPath", () => {
     "/icons/general.png",
     "/favicon.ico",
     "/chart1.png",
+    "/manifest.json",
   ])("allows %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
@@ -23,6 +24,8 @@ describe("isPublicPath", () => {
     "/star-historyX",
     "/api/svgfoo",
     "/signinx",
+    "/manifest.json/x",
+    "/other.json",
     "/favicon.icox/repo",
     "/iconsx/a.txt",
   ])("protects %s", (path) => {

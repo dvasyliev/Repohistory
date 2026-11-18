@@ -1,4 +1,3 @@
-import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoPaths } from "./paths";
 import { sumUniques } from "./sum-uniques";
@@ -6,7 +5,6 @@ import type { Db } from "@/lib/db/client";
 import { getPathHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerPaths(
-  octokit: Octokit,
   db: Db,
   repos: Repo[],
 ): Promise<{
@@ -26,13 +24,7 @@ export async function getOwnerPaths(
     console.error("Error fetching paths history from D1:", error);
   }
   const repoPathsPromises = repos.map((repo) =>
-    getRepoPaths(
-      octokit,
-      db,
-      repo.full_name,
-      repo.id,
-      history.get(repo.id) ?? [],
-    ),
+    getRepoPaths(null, db, repo.full_name, repo.id, history.get(repo.id) ?? []),
   );
 
   const allRepoPaths = await Promise.all(repoPathsPromises);

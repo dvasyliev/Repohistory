@@ -16,6 +16,22 @@ describe("parseDailyCsv", () => {
   });
 });
 
+describe("date validation", () => {
+  it("rejects a bad date in a daily file and names the line", () => {
+    const text =
+      "Date,Total Views,Unique Views\n2025-07-05,1,1\n07/06/2025,2,2\n";
+    expect(() => parseDailyCsv(text, 7)).toThrow(
+      'Invalid date "07/06/2025" on line 3',
+    );
+  });
+
+  it("rejects a bad date in a wide file", () => {
+    expect(() => parseWideCsv("Date,/\nyesterday,3", 7, "paths")).toThrow(
+      'Invalid date "yesterday" on line 2',
+    );
+  });
+});
+
 describe("parseWideCsv", () => {
   it("maps columns to paths and skips zero cells", () => {
     const text = "Date,/,/commits/main\n2025-07-05,136,0\r\n";

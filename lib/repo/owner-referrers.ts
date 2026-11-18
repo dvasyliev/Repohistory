@@ -1,4 +1,3 @@
-import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoReferrers } from "./referrers";
 import { sumUniques } from "./sum-uniques";
@@ -6,7 +5,6 @@ import type { Db } from "@/lib/db/client";
 import { getReferrerHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerReferrers(
-  octokit: Octokit,
   db: Db,
   repos: Repo[],
 ): Promise<{
@@ -27,7 +25,7 @@ export async function getOwnerReferrers(
   }
   const repoReferrersPromises = repos.map((repo) =>
     getRepoReferrers(
-      octokit,
+      null,
       db,
       repo.full_name,
       repo.id,

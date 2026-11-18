@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
     }
 
     const appOctokit = getApp().octokit;
-    const { data: installations } =
-      await appOctokit.rest.apps.listInstallations();
+    const { data } = await appOctokit.rest.apps.listInstallations();
+    const installations = data.filter(
+      (installation) => installation.suspended_at === null,
+    );
 
     if (installations.length === 0) {
       throw new Error("No installations found");

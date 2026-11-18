@@ -1,11 +1,9 @@
-import type { Octokit } from "octokit";
 import type { Repo } from "@/lib/types";
 import { getRepoViews } from "./views";
 import type { Db } from "@/lib/db/client";
 import { getDailyHistoryForRepos } from "@/lib/db/traffic";
 
 export async function getOwnerViews(
-  octokit: Octokit,
   db: Db,
   repos: Repo[],
 ): Promise<{
@@ -24,13 +22,7 @@ export async function getOwnerViews(
     console.error("Error fetching views history from D1:", error);
   }
   const repoViewsPromises = repos.map((repo) =>
-    getRepoViews(
-      octokit,
-      db,
-      repo.full_name,
-      repo.id,
-      history.get(repo.id) ?? [],
-    ),
+    getRepoViews(null, db, repo.full_name, repo.id, history.get(repo.id) ?? []),
   );
 
   const allRepoViews = await Promise.all(repoViewsPromises);

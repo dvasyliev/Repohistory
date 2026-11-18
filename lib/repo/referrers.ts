@@ -3,7 +3,7 @@ import { getReferrerHistory, type ReferrerHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
 
 export async function getRepoReferrers(
-  octokit: Octokit,
+  octokit: Octokit | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -20,7 +20,7 @@ export async function getRepoReferrers(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getReferrerHistory(db, repoId),
-      octokit.rest.repos.getTopReferrers({ owner, repo }),
+      octokit?.rest.repos.getTopReferrers({ owner, repo }) ?? null,
     ]);
 
     // Process stored data
@@ -32,7 +32,7 @@ export async function getRepoReferrers(
 
     // Process GitHub data
     const githubData =
-      githubResult.status === "fulfilled"
+      githubResult.status === "fulfilled" && githubResult.value
         ? githubResult.value.data?.map((item) => ({
             referrer: item.referrer,
             count: item.count,

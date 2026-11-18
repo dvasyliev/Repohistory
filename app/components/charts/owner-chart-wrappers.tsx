@@ -27,65 +27,53 @@ export async function OwnerStarsChartWrapper({
 }
 
 interface OwnerViewChartWrapperProps {
-  owner: string;
   repos: Repo[];
   db: Db;
 }
 
 export async function OwnerViewChartWrapper({
-  owner,
   repos,
   db,
 }: OwnerViewChartWrapperProps) {
-  const octokit = await getInstallationOctokit(owner);
-  const views = await getOwnerViews(octokit, db, repos);
+  const views = await getOwnerViews(db, repos);
   return <ViewChart traffic={{ views }} />;
 }
 
 interface OwnerCloneChartWrapperProps {
-  owner: string;
   repos: Repo[];
   db: Db;
 }
 
 export async function OwnerCloneChartWrapper({
-  owner,
   repos,
   db,
 }: OwnerCloneChartWrapperProps) {
-  const octokit = await getInstallationOctokit(owner);
-  const clones = await getOwnerClones(octokit, db, repos);
+  const clones = await getOwnerClones(db, repos);
   return <CloneChart traffic={{ clones }} />;
 }
 
 interface OwnerReferrersChartWrapperProps {
-  owner: string;
   repos: Repo[];
   db: Db;
 }
 
 export async function OwnerReferrersChartWrapper({
-  owner,
   repos,
   db,
 }: OwnerReferrersChartWrapperProps) {
-  const octokit = await getInstallationOctokit(owner);
-  const { referrers } = await getOwnerReferrers(octokit, db, repos);
+  const { referrers } = await getOwnerReferrers(db, repos);
   return <ReferrersChart traffic={{ referrers }} />;
 }
 
 interface OwnerPopularContentChartWrapperProps {
-  owner: string;
   repos: Repo[];
   db: Db;
 }
 
 export async function OwnerPopularContentChartWrapper({
-  owner,
   repos,
   db,
 }: OwnerPopularContentChartWrapperProps) {
-  const octokit = await getInstallationOctokit(owner);
-  const { paths } = await getOwnerPaths(octokit, db, repos);
+  const { paths } = await getOwnerPaths(db, repos);
   return <PopularContentChart traffic={{ paths }} />;
 }

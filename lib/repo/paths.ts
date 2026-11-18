@@ -3,7 +3,7 @@ import { getPathHistory, type PathHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
 
 export async function getRepoPaths(
-  octokit: Octokit,
+  octokit: Octokit | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -21,7 +21,7 @@ export async function getRepoPaths(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getPathHistory(db, repoId),
-      octokit.rest.repos.getTopPaths({ owner, repo }),
+      octokit?.rest.repos.getTopPaths({ owner, repo }) ?? null,
     ]);
 
     // Process stored data
@@ -33,7 +33,7 @@ export async function getRepoPaths(
 
     // Process GitHub data
     const githubData =
-      githubResult.status === "fulfilled"
+      githubResult.status === "fulfilled" && githubResult.value
         ? githubResult.value.data?.map((item) => ({
             path: item.path.replace(/^\/[^/]+\/[^/]+/, "") || "/",
             title: item.title,
