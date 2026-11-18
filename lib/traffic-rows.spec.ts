@@ -154,14 +154,60 @@ describe("upsertTraffic", () => {
       clones: [],
       paths: [],
       referrers: [],
-      stars: Array.from({ length: 45 }, (_, i) => ({
+      stars: {
         repoId: 1,
-        date: `2025-01-${String(i).padStart(3, "0")}`,
-        count: i + 1,
-      })),
+        rows: Array.from({ length: 45 }, (_, i) => ({
+          repoId: 1,
+          date: `2025-01-${String(i).padStart(3, "0")}`,
+          count: i + 1,
+        })),
+      },
     });
-    expect(batches[0].map((s) => s.params.length / 3)).toEqual([20, 20, 5]);
-    expect(batches[0][0].sql).toContain("on conflict");
-    expect(batches[0][0].sql).toContain('"stars"');
+    expect(batches[0].slice(1).map((s) => s.params.length / 3)).toEqual([
+      20, 20, 5,
+    ]);
+    expect(batches[0][1].sql).toContain("on conflict");
+    expect(batches[0][1].sql).toContain('"stars"');
+  });
+
+  it("deletes the repo's stars before inserting the new ones", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: daily(1),
+      clones: [],
+      paths: [],
+      referrers: [],
+      stars: { repoId: 9, rows: [{ repoId: 9, date: "2025-01-01", count: 2 }] },
+    });
+    const sqls = batches[0].map((s) => s.sql);
+    expect(sqls[0]).toMatch(/^delete from "stars" where/);
+    expect(sqls[0]).toContain('"repo_id" = ?');
+    expect(batches[0][0].params).toEqual([9]);
+    expect(sqls[1]).toContain('insert into "views"');
+    expect(sqls[2]).toContain('insert into "stars"');
+  });
+
+  it("only deletes when a successful fetch found no stars", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+      stars: { repoId: 9, rows: [] },
+    });
+    expect(batches[0]).toHaveLength(1);
+    expect(batches[0][0].sql).toMatch(/^delete from "stars"/);
+  });
+
+  it("keeps stored stars when no star replacement is given", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: daily(1),
+      clones: [],
+      paths: [],
+      referrers: [],
+    });
+    expect(batches[0].map((s) => s.sql).join()).not.toContain("stars");
   });
 });

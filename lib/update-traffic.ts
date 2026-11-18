@@ -1,12 +1,12 @@
-import type { Octokit } from "octokit";
+import type { App, Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
 import { fetchStarWeeks } from "@/lib/repo/stars";
-import { getApp } from "@/lib/octokit/app";
 import {
   toDailyRows,
   toPathRows,
   toReferrerRows,
   toStarRows,
+  type StarRow,
   upsertTraffic,
 } from "@/lib/traffic-rows";
 
@@ -14,7 +14,7 @@ async function fetchStarRows(
   octokit: Octokit,
   fullName: string,
   repoId: number,
-) {
+): Promise<StarRow[] | null> {
   try {
     return toStarRows(repoId, await fetchStarWeeks(octokit, fullName));
   } catch (error) {
@@ -23,15 +23,15 @@ async function fetchStarRows(
       "stars error",
       error instanceof Error ? error.message : String(error),
     );
-    return [];
+    return null;
   }
 }
 
-export async function updateTraffic(installationId: number, db: Db) {
-  const octokit = await getApp().getInstallationOctokit(installationId);
+export async function updateTraffic(app: App, installationId: number, db: Db) {
+  const octokit = await app.getInstallationOctokit(installationId);
   const today = new Date().toISOString().slice(0, 10);
 
-  await getApp().eachRepository({ installationId }, async ({ repository }) => {
+  await app.eachRepository({ installationId }, async ({ repository }) => {
     try {
       const params = { owner: repository.owner.login, repo: repository.name };
       const repoId = Number(repository.id);
@@ -41,14 +41,18 @@ export async function updateTraffic(installationId: number, db: Db) {
       const { data: referrersData } =
         await octokit.rest.repos.getTopReferrers(params);
 
-      const stars = await fetchStarRows(octokit, repository.full_name, repoId);
+      const starRows = await fetchStarRows(
+        octokit,
+        repository.full_name,
+        repoId,
+      );
 
       await upsertTraffic(db, {
         views: toDailyRows(repoId, viewsData.views),
         clones: toDailyRows(repoId, clonesData.clones),
         paths: toPathRows(repoId, pathsData, today),
         referrers: toReferrerRows(repoId, referrersData, today),
-        stars,
+        stars: starRows ? { repoId, rows: starRows } : undefined,
       });
     } catch (error) {
       console.error(

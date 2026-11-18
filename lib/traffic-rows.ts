@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
 import { clones, paths, referrers, stars, views } from "@/lib/db/schema";
 import { toDailyStars, type StarWeek } from "@/lib/repo/stars";
@@ -89,11 +89,14 @@ export async function upsertTraffic(
     clones: DailyRow[];
     paths: PathRow[];
     referrers: ReferrerRow[];
-    stars?: StarRow[];
+    stars?: { repoId: number; rows: StarRow[] };
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
   const statements = [
+    ...(rows.stars
+      ? [db.delete(stars).where(eq(stars.repoId, rows.stars.repoId))]
+      : []),
     ...chunk(rows.views, ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(views)
@@ -124,7 +127,7 @@ export async function upsertTraffic(
           set,
         }),
     ),
-    ...chunk(rows.stars ?? [], ROWS_PER_STATEMENT).map((values) =>
+    ...chunk(rows.stars?.rows ?? [], ROWS_PER_STATEMENT).map((values) =>
       db
         .insert(stars)
         .values(values)
