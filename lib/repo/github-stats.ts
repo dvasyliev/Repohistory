@@ -1,8 +1,10 @@
 import type { Octokit } from "octokit";
 import type { CounterRow } from "@/lib/traffic-rows";
 
-type CommitActivity = { week: number; total: number };
-export type CommitWeek = { week: string; commits: number };
+type CommitActivity = { week: number; days: number[] };
+type ContributorStats = { weeks: { w: number; c: number }[] };
+export type CommitDay = { date: string; commits: number };
+export type CommitHistory = { days: CommitDay[]; weeks: CommitDay[] };
 
 const FORKS_PER_PAGE = 100;
 const MAX_FORK_PAGES = 30;
@@ -40,26 +42,57 @@ async function fetchStat<T>(
   return status !== 202 && Array.isArray(data) ? (data as T[]) : null;
 }
 
-const weekDate = (week: number) =>
-  new Date(week * 1000).toISOString().slice(0, 10);
+const DAY_SECONDS = 86_400;
+const isoDate = (seconds: number) =>
+  new Date(seconds * 1000).toISOString().slice(0, 10);
 
-export async function fetchCommitWeeks(
+function toDays(activity: CommitActivity[], today: string): CommitDay[] {
+  return activity
+    .flatMap(({ week, days }) =>
+      days.map((commits, index) => ({
+        date: isoDate(week + index * DAY_SECONDS),
+        commits,
+      })),
+    )
+    .filter(({ date }) => date <= today);
+}
+
+function toWeeks(contributors: ContributorStats[]): CommitDay[] {
+  const totals = new Map<number, number>();
+  for (const { weeks } of contributors) {
+    for (const { w, c } of weeks) totals.set(w, (totals.get(w) ?? 0) + c);
+  }
+  const sorted = [...totals.entries()].sort(([a], [b]) => a - b);
+  const first = sorted.findIndex(([, commits]) => commits > 0);
+  return first === -1
+    ? []
+    : sorted
+        .slice(first)
+        .map(([week, commits]) => ({ date: isoDate(week), commits }));
+}
+
+export async function fetchCommitHistory(
   octokit: Octokit,
   owner: string,
   repo: string,
-): Promise<CommitWeek[] | null> {
-  const activity = await fetchStat<CommitActivity>(
-    octokit,
-    "GET /repos/{owner}/{repo}/stats/commit_activity",
-    owner,
-    repo,
-  );
-  return (
-    activity?.map(({ week, total }) => ({
-      week: weekDate(week),
-      commits: total,
-    })) ?? null
-  );
+): Promise<CommitHistory | null> {
+  const [activity, contributors] = await Promise.all([
+    fetchStat<CommitActivity>(
+      octokit,
+      "GET /repos/{owner}/{repo}/stats/commit_activity",
+      owner,
+      repo,
+    ),
+    fetchStat<ContributorStats>(
+      octokit,
+      "GET /repos/{owner}/{repo}/stats/contributors",
+      owner,
+      repo,
+    ),
+  ]);
+  if (!activity || !contributors) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  return { days: toDays(activity, today), weeks: toWeeks(contributors) };
 }
 
 export async function fetchCounters(

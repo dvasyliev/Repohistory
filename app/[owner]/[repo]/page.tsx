@@ -16,7 +16,7 @@ import { getRepoStars } from "@/lib/repo/stars";
 import { getRepoViews } from "@/lib/repo/views";
 import { getRepoClones } from "@/lib/repo/clones";
 import {
-  getRepoCommitWeeks,
+  getRepoCommits,
   getRepoCounters,
   getRepoForks,
 } from "@/lib/repo/repo-stats";
@@ -62,7 +62,7 @@ export default async function RepoPage({ params }: PageProps) {
       stargazersCount: repoInfo.stargazers_count,
     }),
     forks: getRepoForks(db, repoInfo.id),
-    commits: getRepoCommitWeeks(installationId, owner, repo),
+    commits: getRepoCommits(installationId, owner, repo),
     counters: getRepoCounters(db, repoInfo.id),
   };
 

@@ -1,7 +1,7 @@
 import type { Octokit } from "octokit";
 import { describe, expect, it, vi } from "vitest";
 import {
-  fetchCommitWeeks,
+  fetchCommitHistory,
   fetchCounters,
   fetchForkDates,
 } from "./github-stats";
@@ -17,33 +17,59 @@ function fakeOctokit(replies: Record<string, Reply[]>) {
 }
 
 const activityRoute = "GET /repos/{owner}/{repo}/stats/commit_activity";
+const contributorsRoute = "GET /repos/{owner}/{repo}/stats/contributors";
 
-describe("fetchCommitWeeks", () => {
-  const week = Date.UTC(2026, 10, 1) / 1000;
-  const activity = [{ week, total: 2 }];
+describe("fetchCommitHistory", () => {
+  const week = Date.UTC(2026, 10, 15) / 1000;
+  const activity = [{ week, days: [0, 2, 0, 1, 5, 0, 0] }];
+  const weekSeconds = 7 * 86_400;
+  const contributors = [
+    {
+      weeks: [
+        { w: week - 2 * weekSeconds, c: 0 },
+        { w: week - weekSeconds, c: 3 },
+        { w: week, c: 1 },
+      ],
+    },
+    { weeks: [{ w: week, c: 2 }] },
+  ];
 
-  it("returns commits by week", async () => {
+  it("returns daily commits up to today and weekly totals from the first commit", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-18T12:00:00Z") });
     const { octokit } = fakeOctokit({
       [activityRoute]: [{ status: 200, data: activity }],
+      [contributorsRoute]: [{ status: 200, data: contributors }],
     });
-    expect(await fetchCommitWeeks(octokit, "o", "r")).toEqual([
-      { week: "2026-11-01", commits: 2 },
-    ]);
+    expect(await fetchCommitHistory(octokit, "o", "r")).toEqual({
+      days: [
+        { date: "2026-11-15", commits: 0 },
+        { date: "2026-11-16", commits: 2 },
+        { date: "2026-11-17", commits: 0 },
+        { date: "2026-11-18", commits: 1 },
+      ],
+      weeks: [
+        { date: "2026-11-08", commits: 3 },
+        { date: "2026-11-15", commits: 3 },
+      ],
+    });
+    vi.useRealTimers();
   });
 
-  it("returns null at once on a 202, with one call", async () => {
+  it("returns null at once when either stat answers 202", async () => {
     const { octokit, request } = fakeOctokit({
-      [activityRoute]: [{ status: 202, data: {} }],
+      [activityRoute]: [{ status: 200, data: activity }],
+      [contributorsRoute]: [{ status: 202, data: {} }],
     });
-    expect(await fetchCommitWeeks(octokit, "o", "r")).toBeNull();
-    expect(request).toHaveBeenCalledTimes(1);
+    expect(await fetchCommitHistory(octokit, "o", "r")).toBeNull();
+    expect(request).toHaveBeenCalledTimes(2);
   });
 
   it("returns null when a 200 body is not an array", async () => {
     const { octokit } = fakeOctokit({
       [activityRoute]: [{ status: 200, data: {} }],
+      [contributorsRoute]: [{ status: 200, data: contributors }],
     });
-    expect(await fetchCommitWeeks(octokit, "o", "r")).toBeNull();
+    expect(await fetchCommitHistory(octokit, "o", "r")).toBeNull();
   });
 });
 

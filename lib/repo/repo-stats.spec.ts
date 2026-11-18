@@ -5,13 +5,13 @@ import type { Repo } from "@/lib/types";
 const getForkHistoryForRepos = vi.hoisted(() => vi.fn());
 const getDailyCountTotals = vi.hoisted(() => vi.fn());
 const getCounterHistory = vi.hoisted(() => vi.fn());
-const fetchCommitWeeks = vi.hoisted(() => vi.fn());
+const fetchCommitHistory = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/db/traffic", () => ({
   getForkHistoryForRepos,
   getDailyCountTotals,
   getCounterHistory,
 }));
-vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitWeeks }));
+vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitHistory }));
 vi.mock("@/lib/octokit/installation", () => ({
   getOctokitForInstallation: () => Promise.resolve({}),
 }));
@@ -30,7 +30,7 @@ vi.mock("next/cache", () => ({
 
 import {
   getOwnerForks,
-  getRepoCommitWeeks,
+  getRepoCommits,
   getRepoCounters,
   getRepoForks,
 } from "./repo-stats";
@@ -101,28 +101,28 @@ describe("getRepoCounters", () => {
   });
 });
 
-describe("getRepoCommitWeeks", () => {
-  it("passes GitHub weeks through and caches them", async () => {
-    const weeks = [{ week: "2026-11-01", commits: 1 }];
-    fetchCommitWeeks.mockReset().mockResolvedValue(weeks);
-    expect(await getRepoCommitWeeks(1, "o", "a")).toEqual(weeks);
-    expect(await getRepoCommitWeeks(1, "o", "a")).toEqual(weeks);
-    expect(fetchCommitWeeks).toHaveBeenCalledTimes(1);
+describe("getRepoCommits", () => {
+  it("passes GitHub days through and caches them", async () => {
+    const weeks = { days: [{ date: "2026-11-01", commits: 1 }], weeks: [] };
+    fetchCommitHistory.mockReset().mockResolvedValue(weeks);
+    expect(await getRepoCommits(1, "o", "a")).toEqual(weeks);
+    expect(await getRepoCommits(1, "o", "a")).toEqual(weeks);
+    expect(fetchCommitHistory).toHaveBeenCalledTimes(1);
   });
 
   it("gives null while GitHub computes and asks again next time", async () => {
-    const weeks = [{ week: "2026-11-01", commits: 2 }];
-    fetchCommitWeeks.mockReset().mockResolvedValueOnce(null);
-    fetchCommitWeeks.mockResolvedValueOnce(weeks);
-    expect(await getRepoCommitWeeks(1, "o", "b")).toBeNull();
-    expect(await getRepoCommitWeeks(1, "o", "b")).toEqual(weeks);
+    const weeks = { days: [{ date: "2026-11-01", commits: 2 }], weeks: [] };
+    fetchCommitHistory.mockReset().mockResolvedValueOnce(null);
+    fetchCommitHistory.mockResolvedValueOnce(weeks);
+    expect(await getRepoCommits(1, "o", "b")).toBeNull();
+    expect(await getRepoCommits(1, "o", "b")).toEqual(weeks);
   });
 
   it("throws and asks again next time when GitHub fails", async () => {
-    const weeks = [{ week: "2026-11-01", commits: 3 }];
-    fetchCommitWeeks.mockReset().mockRejectedValueOnce(new Error("down"));
-    fetchCommitWeeks.mockResolvedValueOnce(weeks);
-    await expect(getRepoCommitWeeks(1, "o", "c")).rejects.toThrow("down");
-    expect(await getRepoCommitWeeks(1, "o", "c")).toEqual(weeks);
+    const weeks = { days: [{ date: "2026-11-01", commits: 3 }], weeks: [] };
+    fetchCommitHistory.mockReset().mockRejectedValueOnce(new Error("down"));
+    fetchCommitHistory.mockResolvedValueOnce(weeks);
+    await expect(getRepoCommits(1, "o", "c")).rejects.toThrow("down");
+    expect(await getRepoCommits(1, "o", "c")).toEqual(weeks);
   });
 });

@@ -6,7 +6,10 @@ import {
   getForkHistoryForRepos,
   type CounterHistory,
 } from "@/lib/db/traffic";
-import { fetchCommitWeeks, type CommitWeek } from "@/lib/repo/github-stats";
+import {
+  fetchCommitHistory,
+  type CommitHistory,
+} from "@/lib/repo/github-stats";
 import type { Repo } from "@/lib/types";
 import { dailyCache } from "@/lib/daily-cache";
 import { getOctokitForInstallation } from "@/lib/octokit/installation";
@@ -40,23 +43,23 @@ export function getRepoCounters(
 
 class StillCountingError extends Error {}
 
-const fetchCachedCommitWeeks = dailyCache(
-  "github-commit-weeks",
+const fetchCachedCommits = dailyCache(
+  "github-commits",
   async (installationId: number, owner: string, repo: string) => {
     const octokit = await getOctokitForInstallation(installationId);
-    const weeks = await fetchCommitWeeks(octokit, owner, repo);
-    if (weeks === null) throw new StillCountingError();
-    return weeks;
+    const history = await fetchCommitHistory(octokit, owner, repo);
+    if (history === null) throw new StillCountingError();
+    return history;
   },
 );
 
-export async function getRepoCommitWeeks(
+export async function getRepoCommits(
   installationId: number,
   owner: string,
   repo: string,
-): Promise<CommitWeek[] | null> {
+): Promise<CommitHistory | null> {
   try {
-    return await fetchCachedCommitWeeks(installationId, owner, repo);
+    return await fetchCachedCommits(installationId, owner, repo);
   } catch (error) {
     if (error instanceof StillCountingError) return null;
     throw error;

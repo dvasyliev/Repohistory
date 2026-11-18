@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Bar } from "recharts";
+import { Area } from "recharts";
 import {
   Card,
   CardContent,
@@ -15,10 +15,11 @@ import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
 import { hasNonZero } from "@/lib/chart-empty";
 import { useDateFiltered } from "./use-date-filtered";
-import type { CommitWeek } from "@/lib/repo/github-stats";
+import { useDateRange } from "@/lib/contexts/date-range-context";
+import type { CommitDay, CommitHistory } from "@/lib/repo/github-stats";
 
 interface CommitActivityChartProps {
-  weeks?: CommitWeek[] | null;
+  history?: CommitHistory | null;
   isLoading?: boolean;
 }
 
@@ -26,16 +27,15 @@ const commitsConfig = {
   commits: { label: "Commits", color: "#62C3F8" },
 } satisfies ChartConfig;
 
-const EMPTY: CommitWeek[] = [];
+const EMPTY: CommitDay[] = [];
 
 export function CommitActivityChart({
-  weeks = EMPTY,
+  history,
   isLoading = false,
 }: CommitActivityChartProps) {
-  const data = useMemo(
-    () => (weeks ?? []).map(({ week, commits }) => ({ date: week, commits })),
-    [weeks],
-  );
+  const { selectedPeriod } = useDateRange();
+  const weekly = selectedPeriod === "all";
+  const data = (weekly ? history?.weeks : history?.days) ?? EMPTY;
   const filteredData = useDateFiltered(data);
   const totalCommits = useMemo(
     () => filteredData.reduce((sum, item) => sum + item.commits, 0),
@@ -49,7 +49,9 @@ export function CommitActivityChart({
           <CardTitle role="heading" aria-level={2}>
             Commit Activity
           </CardTitle>
-          <CardDescription>Weekly commits in the last year</CardDescription>
+          <CardDescription>
+            {weekly ? "Weekly commits since the first commit" : "Daily commits"}
+          </CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-xs text-muted-foreground">Total Commits</span>
@@ -63,7 +65,7 @@ export function CommitActivityChart({
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {weeks === null ? (
+        {history === null ? (
           <div className="flex h-64 items-center justify-center text-muted-foreground">
             GitHub is still counting commits. Reload in a minute.
           </div>
@@ -74,10 +76,13 @@ export function CommitActivityChart({
             className="h-64 w-full"
             isLoading={isLoading}
           >
-            <Bar
+            <Area
               isAnimationActive={false}
               dataKey="commits"
               fill="var(--color-commits)"
+              fillOpacity={0.3}
+              stroke="var(--color-commits)"
+              strokeWidth={2}
             />
           </Chart>
         ) : (
