@@ -49,17 +49,17 @@ describe("fetchCommitStats", () => {
     expect(
       request.mock.calls.filter(([route]) => route === activityRoute),
     ).toHaveLength(2);
+    expect(request.mock.calls.map(([route]) => route)).not.toContain(
+      frequencyRoute,
+    );
   });
 
-  it("treats an empty answer as no data", async () => {
+  it("returns null when a 200 body is not an array", async () => {
     const { octokit } = fakeOctokit({
       [activityRoute]: [{ status: 200, data: {} }],
-      [frequencyRoute]: [{ status: 204, data: undefined }],
+      [frequencyRoute]: [{ status: 200, data: frequency }],
     });
-    expect(await fetchCommitStats(octokit, "o", "r")).toEqual({
-      activity: [],
-      frequency: [],
-    });
+    expect(await fetchCommitStats(octokit, "o", "r")).toBeNull();
   });
 });
 

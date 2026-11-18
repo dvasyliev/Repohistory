@@ -91,30 +91,33 @@ export function toForkRows(repoId: number, createdAt: string[]): ForkRow[] {
   return Array.from(counts, ([date, count]) => ({ repoId, date, count }));
 }
 
-export function toCommitWeekRows(
+const weekDate = (week: number) =>
+  new Date(week * 1000).toISOString().slice(0, 10);
+
+export function toCommitActivityRows(
   repoId: number,
   activity: { week: number; total: number }[],
+): CommitWeekRow[] {
+  return activity.map(({ week, total }) => ({
+    repoId,
+    week: weekDate(week),
+    commits: total,
+    additions: 0,
+    deletions: 0,
+  }));
+}
+
+export function toCodeFrequencyRows(
+  repoId: number,
   frequency: [number, number, number][],
 ): CommitWeekRow[] {
-  const byWeek = new Map<string, CommitWeekRow>();
-  const rowFor = (week: number) => {
-    const key = new Date(week * 1000).toISOString().slice(0, 10);
-    let row = byWeek.get(key);
-    if (!row) {
-      row = { repoId, week: key, commits: 0, additions: 0, deletions: 0 };
-      byWeek.set(key, row);
-    }
-    return row;
-  };
-  for (const { week, total } of activity) rowFor(week).commits = total;
-  for (const [week, additions, deletions] of frequency) {
-    const row = rowFor(week);
-    row.additions = additions;
-    row.deletions = Math.abs(deletions);
-  }
-  return Array.from(byWeek.values()).sort((a, b) =>
-    a.week.localeCompare(b.week),
-  );
+  return frequency.map(([week, additions, deletions]) => ({
+    repoId,
+    week: weekDate(week),
+    commits: 0,
+    additions,
+    deletions: Math.abs(deletions),
+  }));
 }
 
 const ROWS_PER_STATEMENT = 20;
@@ -140,7 +143,7 @@ export async function upsertTraffic(
     stars?: { repoId: number; rows: StarRow[] };
     counters?: CounterRow[];
     forks?: { repoId: number; rows: ForkRow[] };
-    commitWeeks?: { repoId: number; rows: CommitWeekRow[] };
+    commitWeeks?: { activity: CommitWeekRow[]; frequency: CommitWeekRow[] };
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
@@ -150,13 +153,6 @@ export async function upsertTraffic(
       : []),
     ...(rows.forks
       ? [db.delete(forks).where(eq(forks.repoId, rows.forks.repoId))]
-      : []),
-    ...(rows.commitWeeks
-      ? [
-          db
-            .delete(commitWeeks)
-            .where(eq(commitWeeks.repoId, rows.commitWeeks.repoId)),
-        ]
       : []),
     ...chunk(rows.views, ROWS_PER_STATEMENT).map((values) =>
       db
@@ -206,18 +202,28 @@ export async function upsertTraffic(
           set: { count: sql`excluded.count` },
         }),
     ),
-    ...chunk(rows.commitWeeks?.rows ?? [], ROWS_PER_STATEMENT).map((values) =>
-      db
-        .insert(commitWeeks)
-        .values(values)
-        .onConflictDoUpdate({
-          target: [commitWeeks.repoId, commitWeeks.week],
-          set: {
-            commits: sql`excluded.commits`,
-            additions: sql`excluded.additions`,
-            deletions: sql`excluded.deletions`,
-          },
-        }),
+    ...chunk(rows.commitWeeks?.activity ?? [], ROWS_PER_STATEMENT).map(
+      (values) =>
+        db
+          .insert(commitWeeks)
+          .values(values)
+          .onConflictDoUpdate({
+            target: [commitWeeks.repoId, commitWeeks.week],
+            set: { commits: sql`excluded.commits` },
+          }),
+    ),
+    ...chunk(rows.commitWeeks?.frequency ?? [], ROWS_PER_STATEMENT).map(
+      (values) =>
+        db
+          .insert(commitWeeks)
+          .values(values)
+          .onConflictDoUpdate({
+            target: [commitWeeks.repoId, commitWeeks.week],
+            set: {
+              additions: sql`excluded.additions`,
+              deletions: sql`excluded.deletions`,
+            },
+          }),
     ),
     ...chunk(rows.counters ?? [], COUNTER_ROWS_PER_STATEMENT).map((values) =>
       db

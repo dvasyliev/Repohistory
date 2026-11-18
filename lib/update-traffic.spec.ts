@@ -94,7 +94,7 @@ describe("updateTraffic", () => {
     const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
     expect(rows.stars).toEqual({ repoId: 7, rows: [] });
     expect(rows.forks).toEqual({ repoId: 7, rows: [] });
-    expect(rows.commitWeeks).toEqual({ repoId: 7, rows: [] });
+    expect(rows.commitWeeks).toEqual({ activity: [], frequency: [] });
     expect(rows.counters).toEqual([
       {
         repoId: 7,

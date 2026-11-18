@@ -47,7 +47,7 @@ async function fetchStat<T>(
       owner,
       repo,
     })) as { status: number; data: unknown };
-    if (status !== 202) return Array.isArray(data) ? (data as T[]) : [];
+    if (status !== 202) return Array.isArray(data) ? (data as T[]) : null;
     if (attempt === 0) await sleep(RETRY_DELAY_MS);
   }
   return null;
@@ -66,6 +66,7 @@ export async function fetchCommitStats(
     repo,
     sleep,
   );
+  if (!activity) return null;
   const frequency = await fetchStat<CodeFrequency>(
     octokit,
     "GET /repos/{owner}/{repo}/stats/code_frequency",
@@ -73,7 +74,7 @@ export async function fetchCommitStats(
     repo,
     sleep,
   );
-  return activity && frequency ? { activity, frequency } : null;
+  return frequency ? { activity, frequency } : null;
 }
 
 export async function fetchCounters(

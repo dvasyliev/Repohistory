@@ -19,6 +19,7 @@ import type { ForkDay } from "@/lib/repo/repo-stats";
 interface ForksChartProps {
   forksData?: ForkDay[];
   isLoading?: boolean;
+  description?: string;
 }
 
 const chartConfig = {
@@ -28,7 +29,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function ForksChart({ forksData, isLoading = false }: ForksChartProps) {
+export function ForksChart({
+  forksData,
+  isLoading = false,
+  description = "Repo fork growth, cumulative",
+}: ForksChartProps) {
   const data = useMemo(
     () =>
       (forksData ?? []).map(({ date, cumulative }) => ({
@@ -47,7 +52,7 @@ export function ForksChart({ forksData, isLoading = false }: ForksChartProps) {
           <CardTitle role="heading" aria-level={2}>
             Forks Over Time
           </CardTitle>
-          <CardDescription>Repo fork growth, cumulative</CardDescription>
+          <CardDescription>{description}</CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-xs text-muted-foreground">Total Forks</span>

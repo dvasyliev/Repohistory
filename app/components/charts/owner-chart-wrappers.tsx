@@ -83,5 +83,10 @@ export async function OwnerForksChartWrapper({
   db,
 }: OwnerStarsChartWrapperProps) {
   const forks = await getOwnerForks(db, repos);
-  return <ForksChart forksData={forks} />;
+  return (
+    <ForksChart
+      forksData={forks}
+      description="Fork growth across all repos, cumulative"
+    />
+  );
 }

@@ -7,7 +7,8 @@ import {
 } from "@/lib/repo/github-stats";
 import { fetchStarWeeks } from "@/lib/repo/stars";
 import {
-  toCommitWeekRows,
+  toCodeFrequencyRows,
+  toCommitActivityRows,
   toDailyRows,
   toForkRows,
   toPathRows,
@@ -74,11 +75,14 @@ const fetchCommitWeekRows = (
   fullName: string,
   params: { owner: string; repo: string },
   repoId: number,
-): Promise<CommitWeekRow[] | null> =>
+): Promise<{ activity: CommitWeekRow[]; frequency: CommitWeekRow[] } | null> =>
   orNull(fullName, "commits", async () => {
     const stats = await fetchCommitStats(octokit, params.owner, params.repo);
     return stats
-      ? toCommitWeekRows(repoId, stats.activity, stats.frequency)
+      ? {
+          activity: toCommitActivityRows(repoId, stats.activity),
+          frequency: toCodeFrequencyRows(repoId, stats.frequency),
+        }
       : null;
   });
 
@@ -129,7 +133,7 @@ export async function updateTraffic(app: App, installationId: number, db: Db) {
         stars: starRows ? { repoId, rows: starRows } : undefined,
         counters: counterRows ?? undefined,
         forks: forkRows ? { repoId, rows: forkRows } : undefined,
-        commitWeeks: commitRows ? { repoId, rows: commitRows } : undefined,
+        commitWeeks: commitRows ?? undefined,
       });
     } catch (error) {
       console.error(
