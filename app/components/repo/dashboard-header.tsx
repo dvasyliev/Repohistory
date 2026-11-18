@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { repoSortParser } from "@/lib/repo/sort-query";
-import type { RepoSort } from "@/lib/repo/sort";
+import { parseRepoSort, type RepoSort } from "@/lib/repo/sort";
 
 const SORT_LABELS: Record<RepoSort, string> = {
   views: "Views (14d)",
@@ -33,25 +33,22 @@ export function DashboardHeader() {
   };
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <Tabs value={viewMode} onValueChange={handleViewChange}>
         <TabsList>
           <TabsTrigger value="repos">Repos</TabsTrigger>
           <TabsTrigger value="owners">Owners</TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {viewMode === "repos" && (
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             Sort by
             <select
               value={sort}
-              onChange={(event) => {
-                const next = SORT_OPTIONS.find(
-                  ([value]) => value === event.target.value,
-                );
-                if (next) void setSort(next[0]);
-              }}
+              onChange={(event) =>
+                void setSort(parseRepoSort(event.target.value))
+              }
               className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             >
               {SORT_OPTIONS.map(([value, label]) => (
