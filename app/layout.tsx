@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3474",
+  ),
   title: "Repohistory",
   description:
     "A open-source analytics platform for tracking GitHub repo traffic history longer than 14 days.",

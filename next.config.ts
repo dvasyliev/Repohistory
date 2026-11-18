@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     dangerouslyAllowSVG: true,
+    // Workers have no Next image optimizer without a paid Images binding.
+    unoptimized: true,
   },
   logging: {
     fetches: {
