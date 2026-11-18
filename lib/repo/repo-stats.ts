@@ -53,37 +53,61 @@ export const getOwnerCounters = cache(
 
 class StillCountingError extends Error {}
 
-const fetchCachedCommits = dailyCache(
-  "github-commits",
-  async (installationId: number, owner: string, repo: string) => {
-    const octokit = await getOctokitForInstallation(installationId);
-    const history = await fetchCommitHistory(octokit, owner, repo);
-    if (history === null) throw new StillCountingError();
-    return history;
-  },
-);
-
-export async function getRepoCommits(
+async function fetchCommits(
   installationId: number,
   owner: string,
   repo: string,
+): Promise<CommitHistory> {
+  const octokit = await getOctokitForInstallation(installationId);
+  const history = await fetchCommitHistory(octokit, owner, repo);
+  if (history === null) throw new StillCountingError();
+  return history;
+}
+
+const fetchCachedCommits = dailyCache("github-commits", fetchCommits);
+
+// One cache entry per owner: a cache call counts toward the 50 subrequests a page may make.
+const fetchCachedOwnerCommits = dailyCache(
+  "github-owner-commits",
+  async (installationId: number, owner: string, repoNames: string) =>
+    sumCommitHistories(
+      await Promise.all(
+        repoNames
+          .split(",")
+          .map((repo) => fetchCommits(installationId, owner, repo)),
+      ),
+    ),
+);
+
+async function nullWhileCounting(
+  read: Promise<CommitHistory>,
 ): Promise<CommitHistory | null> {
   try {
-    return await fetchCachedCommits(installationId, owner, repo);
+    return await read;
   } catch (error) {
     if (error instanceof StillCountingError) return null;
     throw error;
   }
 }
 
-export async function getOwnerCommits(
+export function getRepoCommits(
+  installationId: number,
+  owner: string,
+  repo: string,
+): Promise<CommitHistory | null> {
+  return nullWhileCounting(fetchCachedCommits(installationId, owner, repo));
+}
+
+export function getOwnerCommits(
   installationId: number,
   owner: string,
   repos: Repo[],
 ): Promise<CommitHistory | null> {
-  const histories = await Promise.all(
-    repos.map((repo) => getRepoCommits(installationId, owner, repo.name)),
+  const repoNames = repos
+    .map((repo) => repo.name)
+    .sort()
+    .join(",");
+  return nullWhileCounting(
+    fetchCachedOwnerCommits(installationId, owner, repoNames),
   );
-  if (histories.some((history) => history === null)) return null;
-  return sumCommitHistories(histories.filter((history) => history !== null));
 }

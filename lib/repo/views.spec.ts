@@ -8,10 +8,6 @@ vi.mock("@/lib/octokit/installation", () => ({
   getOctokitForInstallation: () =>
     Promise.resolve({ rest: { repos: { getViews } } }),
 }));
-vi.mock("next/cache", () => ({
-  unstable_cache: <T>(fn: () => Promise<T>) => fn,
-}));
-
 import { getRepoViews } from "./views";
 
 const db = {} as Db;

@@ -8,10 +8,6 @@ vi.mock("react", async (importOriginal) => {
 const notFound = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
-vi.mock("next/cache", () => ({
-  unstable_cache: <T>(fn: () => Promise<T>) => fn,
-}));
-
 vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
 
 const listInstallations = vi.fn();

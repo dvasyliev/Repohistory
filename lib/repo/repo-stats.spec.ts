@@ -16,11 +16,14 @@ vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitHistory }));
 vi.mock("@/lib/octokit/installation", () => ({
   getOctokitForInstallation: () => Promise.resolve({}),
 }));
-vi.mock("next/cache", () => ({
-  unstable_cache: <A extends unknown[], T>(fn: (...args: A) => Promise<T>) => {
+vi.mock("@/lib/daily-cache", () => ({
+  dailyCache: <A extends unknown[], T>(
+    name: string,
+    fn: (...args: A) => Promise<T>,
+  ) => {
     const store = new Map<string, T>();
     return async (...args: A) => {
-      const key = JSON.stringify(args);
+      const key = JSON.stringify([name, ...args]);
       if (store.has(key)) return store.get(key);
       const value = await fn(...args);
       store.set(key, value);

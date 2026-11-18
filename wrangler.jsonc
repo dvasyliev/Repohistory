@@ -22,12 +22,6 @@
       "migrations_dir": "drizzle",
     },
   ],
-  "kv_namespaces": [
-    {
-      "binding": "NEXT_INC_CACHE_KV",
-      "id": "13390fc6144a4c5d964a7a6b267c1396",
-    },
-  ],
   "workers_dev": true,
   "routes": [
     {
