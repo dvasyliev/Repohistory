@@ -4,6 +4,8 @@ import * as schema from "./db/schema";
 import {
   toDailyRows,
   toPathRows,
+  toCommitWeekRows,
+  toForkRows,
   toReferrerRows,
   toStarRows,
   upsertTraffic,
@@ -87,6 +89,47 @@ describe("toStarRows", () => {
       { repoId: 1, date: "2026-11-01", count: 1 },
       { repoId: 1, date: "2026-11-03", count: 2 },
       { repoId: 1, date: "2026-11-07", count: 3 },
+    ]);
+  });
+});
+
+describe("toForkRows", () => {
+  it("counts forks per creation day", () => {
+    expect(
+      toForkRows(1, [
+        "2026-11-01T10:00:00Z",
+        "2026-11-01T23:00:00Z",
+        "2026-11-03T01:00:00Z",
+      ]),
+    ).toEqual([
+      { repoId: 1, date: "2026-11-01", count: 2 },
+      { repoId: 1, date: "2026-11-03", count: 1 },
+    ]);
+  });
+});
+
+describe("toCommitWeekRows", () => {
+  const week = Date.UTC(2026, 10, 1) / 1000;
+
+  it("joins commits with positive additions and deletions", () => {
+    expect(
+      toCommitWeekRows(1, [{ week, total: 5 }], [[week, 120, -30]]),
+    ).toEqual([
+      {
+        repoId: 1,
+        week: "2026-11-01",
+        commits: 5,
+        additions: 120,
+        deletions: 30,
+      },
+    ]);
+  });
+
+  it("fills zeros for a week present in one endpoint only", () => {
+    const next = week + 7 * 86_400;
+    expect(toCommitWeekRows(1, [{ week, total: 2 }], [[next, 4, -1]])).toEqual([
+      { repoId: 1, week: "2026-11-01", commits: 2, additions: 0, deletions: 0 },
+      { repoId: 1, week: "2026-11-08", commits: 0, additions: 4, deletions: 1 },
     ]);
   });
 });
@@ -209,5 +252,87 @@ describe("upsertTraffic", () => {
       referrers: [],
     });
     expect(batches[0].map((s) => s.sql).join()).not.toContain("stars");
+  });
+
+  it("deletes the repo's forks before inserting, then chunks by 20", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+      forks: {
+        repoId: 4,
+        rows: Array.from({ length: 25 }, (_, i) => ({
+          repoId: 4,
+          date: `2025-01-${String(i).padStart(3, "0")}`,
+          count: 1,
+        })),
+      },
+    });
+    expect(batches[0][0].sql).toMatch(/^delete from "forks" where/);
+    expect(batches[0][0].params).toEqual([4]);
+    expect(batches[0].slice(1).map((s) => s.params.length / 3)).toEqual([
+      20, 5,
+    ]);
+  });
+
+  it("deletes the repo's commit weeks before inserting", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+      commitWeeks: {
+        repoId: 4,
+        rows: Array.from({ length: 21 }, (_, i) => ({
+          repoId: 4,
+          week: `2025-01-${String(i).padStart(3, "0")}`,
+          commits: i,
+          additions: 1,
+          deletions: 1,
+        })),
+      },
+    });
+    expect(batches[0][0].sql).toMatch(/^delete from "commit_weeks" where/);
+    expect(batches[0][0].params).toEqual([4]);
+    expect(batches[0].slice(1).map((s) => s.params.length / 5)).toEqual([
+      20, 1,
+    ]);
+  });
+
+  it("upserts counters in chunks of 16 rows", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+      counters: Array.from({ length: 17 }, (_, i) => ({
+        repoId: i,
+        date: "2026-11-18",
+        stars: 1,
+        forks: 1,
+        watchers: 1,
+        openIssues: 1,
+      })),
+    });
+    expect(batches[0].map((s) => s.params.length / 6)).toEqual([16, 1]);
+    expect(batches[0][0].sql).toContain("on conflict");
+    expect(batches[0].every((s) => s.params.length <= 100)).toBe(true);
+  });
+
+  it("keeps stored forks and commit weeks when none are given", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: daily(1),
+      clones: [],
+      paths: [],
+      referrers: [],
+    });
+    const sql = batches[0].map((s) => s.sql).join();
+    expect(sql).not.toContain("forks");
+    expect(sql).not.toContain("commit_weeks");
   });
 });

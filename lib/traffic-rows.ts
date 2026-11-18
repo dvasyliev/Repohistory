@@ -1,6 +1,15 @@
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
-import { clones, paths, referrers, stars, views } from "@/lib/db/schema";
+import {
+  clones,
+  commitWeeks,
+  forks,
+  paths,
+  referrers,
+  repoCounters,
+  stars,
+  views,
+} from "@/lib/db/schema";
 import { toDailyStars, type StarWeek } from "@/lib/repo/stars";
 
 export type DailyRow = typeof views.$inferInsert;
@@ -8,6 +17,9 @@ export type PathRow = typeof paths.$inferInsert;
 export type ReferrerRow = typeof referrers.$inferInsert;
 
 export type StarRow = typeof stars.$inferInsert;
+export type CounterRow = typeof repoCounters.$inferInsert;
+export type ForkRow = typeof forks.$inferInsert;
+export type CommitWeekRow = typeof commitWeeks.$inferInsert;
 
 type Counts = { count: number; uniques: number };
 
@@ -70,7 +82,43 @@ export function toStarRows(repoId: number, weeks: StarWeek[]): StarRow[] {
   }));
 }
 
+export function toForkRows(repoId: number, createdAt: string[]): ForkRow[] {
+  const counts = new Map<string, number>();
+  for (const timestamp of createdAt) {
+    const date = timestamp.slice(0, 10);
+    counts.set(date, (counts.get(date) ?? 0) + 1);
+  }
+  return Array.from(counts, ([date, count]) => ({ repoId, date, count }));
+}
+
+export function toCommitWeekRows(
+  repoId: number,
+  activity: { week: number; total: number }[],
+  frequency: [number, number, number][],
+): CommitWeekRow[] {
+  const byWeek = new Map<string, CommitWeekRow>();
+  const rowFor = (week: number) => {
+    const key = new Date(week * 1000).toISOString().slice(0, 10);
+    let row = byWeek.get(key);
+    if (!row) {
+      row = { repoId, week: key, commits: 0, additions: 0, deletions: 0 };
+      byWeek.set(key, row);
+    }
+    return row;
+  };
+  for (const { week, total } of activity) rowFor(week).commits = total;
+  for (const [week, additions, deletions] of frequency) {
+    const row = rowFor(week);
+    row.additions = additions;
+    row.deletions = Math.abs(deletions);
+  }
+  return Array.from(byWeek.values()).sort((a, b) =>
+    a.week.localeCompare(b.week),
+  );
+}
+
 const ROWS_PER_STATEMENT = 20;
+const COUNTER_ROWS_PER_STATEMENT = 16;
 const ROWS_PER_BATCH = 500;
 const STATEMENTS_PER_BATCH = ROWS_PER_BATCH / ROWS_PER_STATEMENT;
 
@@ -90,12 +138,25 @@ export async function upsertTraffic(
     paths: PathRow[];
     referrers: ReferrerRow[];
     stars?: { repoId: number; rows: StarRow[] };
+    counters?: CounterRow[];
+    forks?: { repoId: number; rows: ForkRow[] };
+    commitWeeks?: { repoId: number; rows: CommitWeekRow[] };
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
   const statements = [
     ...(rows.stars
       ? [db.delete(stars).where(eq(stars.repoId, rows.stars.repoId))]
+      : []),
+    ...(rows.forks
+      ? [db.delete(forks).where(eq(forks.repoId, rows.forks.repoId))]
+      : []),
+    ...(rows.commitWeeks
+      ? [
+          db
+            .delete(commitWeeks)
+            .where(eq(commitWeeks.repoId, rows.commitWeeks.repoId)),
+        ]
       : []),
     ...chunk(rows.views, ROWS_PER_STATEMENT).map((values) =>
       db
@@ -134,6 +195,42 @@ export async function upsertTraffic(
         .onConflictDoUpdate({
           target: [stars.repoId, stars.date],
           set: { count: sql`excluded.count` },
+        }),
+    ),
+    ...chunk(rows.forks?.rows ?? [], ROWS_PER_STATEMENT).map((values) =>
+      db
+        .insert(forks)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [forks.repoId, forks.date],
+          set: { count: sql`excluded.count` },
+        }),
+    ),
+    ...chunk(rows.commitWeeks?.rows ?? [], ROWS_PER_STATEMENT).map((values) =>
+      db
+        .insert(commitWeeks)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [commitWeeks.repoId, commitWeeks.week],
+          set: {
+            commits: sql`excluded.commits`,
+            additions: sql`excluded.additions`,
+            deletions: sql`excluded.deletions`,
+          },
+        }),
+    ),
+    ...chunk(rows.counters ?? [], COUNTER_ROWS_PER_STATEMENT).map((values) =>
+      db
+        .insert(repoCounters)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [repoCounters.repoId, repoCounters.date],
+          set: {
+            stars: sql`excluded.stars`,
+            forks: sql`excluded.forks`,
+            watchers: sql`excluded.watchers`,
+            openIssues: sql`excluded.open_issues`,
+          },
         }),
     ),
   ];

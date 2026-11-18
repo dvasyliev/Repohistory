@@ -16,7 +16,7 @@ const repository = {
   owner: { login: "owner" },
 };
 
-function fakeApp(request: () => Promise<unknown>): App {
+function fakeApp(request: (route: string) => Promise<unknown>): App {
   const rest = {
     repos: {
       getViews: () =>
@@ -41,6 +41,25 @@ function fakeApp(request: () => Promise<unknown>): App {
   } as unknown as App;
 }
 
+const repoData = {
+  id: 7,
+  stargazers_count: 5,
+  forks_count: 2,
+  subscribers_count: 3,
+  open_issues_count: 1,
+};
+
+function route(overrides: Record<string, () => Promise<unknown>> = {}) {
+  return (path: string) => {
+    if (overrides[path]) return overrides[path]();
+    if (path === "GET /repos/{owner}/{repo}")
+      return Promise.resolve({ status: 200, data: repoData });
+    if (path.includes("/stats/"))
+      return Promise.resolve({ status: 200, data: [] });
+    return Promise.resolve({ status: 200, data: [] });
+  };
+}
+
 describe("updateTraffic", () => {
   beforeEach(() => {
     vi.mocked(upsertTraffic).mockReset();
@@ -48,7 +67,12 @@ describe("updateTraffic", () => {
   });
 
   it("keeps stored stars and logs when the star fetch fails", async () => {
-    const app = fakeApp(() => Promise.reject(new Error("boom")));
+    const app = fakeApp(
+      route({
+        "GET /repos/{owner}/{repo}/stargazers/history": () =>
+          Promise.reject(new Error("boom")),
+      }),
+    );
     await updateTraffic(app, 1, {} as Db);
 
     expect(console.error).toHaveBeenCalledWith(
@@ -64,10 +88,76 @@ describe("updateTraffic", () => {
   });
 
   it("replaces the repo's stars when the star fetch succeeds", async () => {
-    const app = fakeApp(() => Promise.resolve({ data: [] }));
+    const app = fakeApp(route());
     await updateTraffic(app, 1, {} as Db);
 
     const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
     expect(rows.stars).toEqual({ repoId: 7, rows: [] });
+    expect(rows.forks).toEqual({ repoId: 7, rows: [] });
+    expect(rows.commitWeeks).toEqual({ repoId: 7, rows: [] });
+    expect(rows.counters).toEqual([
+      {
+        repoId: 7,
+        date: new Date().toISOString().slice(0, 10),
+        stars: 5,
+        forks: 2,
+        watchers: 3,
+        openIssues: 1,
+      },
+    ]);
+  });
+
+  it("skips forks and logs when the forks fetch fails", async () => {
+    const app = fakeApp(
+      route({
+        "GET /repos/{owner}/{repo}/forks": () =>
+          Promise.reject(new Error("nope")),
+      }),
+    );
+    await updateTraffic(app, 1, {} as Db);
+
+    expect(console.error).toHaveBeenCalledWith(
+      "owner/repo",
+      "forks error",
+      "nope",
+    );
+    const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
+    expect(rows.views).toHaveLength(1);
+    expect(rows.forks).toBeUndefined();
+    expect(rows.commitWeeks).toBeDefined();
+  });
+
+  it("skips counters and logs when the repo fetch fails", async () => {
+    const app = fakeApp(
+      route({
+        "GET /repos/{owner}/{repo}": () => Promise.reject(new Error("bad")),
+      }),
+    );
+    await updateTraffic(app, 1, {} as Db);
+
+    expect(console.error).toHaveBeenCalledWith(
+      "owner/repo",
+      "counters error",
+      "bad",
+    );
+    const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
+    expect(rows.counters).toBeUndefined();
+  });
+
+  it("skips commit weeks when the stats are still computing", async () => {
+    vi.useFakeTimers();
+    const app = fakeApp(
+      route({
+        "GET /repos/{owner}/{repo}/stats/commit_activity": () =>
+          Promise.resolve({ status: 202, data: {} }),
+      }),
+    );
+    const done = updateTraffic(app, 1, {} as Db);
+    await vi.runAllTimersAsync();
+    await done;
+    vi.useRealTimers();
+
+    const [, rows] = vi.mocked(upsertTraffic).mock.calls[0];
+    expect(rows.commitWeeks).toBeUndefined();
   });
 });

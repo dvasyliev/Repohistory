@@ -60,3 +60,38 @@ export const stars = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.repoId, t.date] })],
 );
+
+export const repoCounters = sqliteTable(
+  "repo_counters",
+  {
+    repoId: integer("repo_id").notNull(),
+    date: text("date").notNull(),
+    stars: integer("stars").notNull(),
+    forks: integer("forks").notNull(),
+    watchers: integer("watchers").notNull(),
+    openIssues: integer("open_issues").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repoId, t.date] })],
+);
+
+export const forks = sqliteTable(
+  "forks",
+  {
+    repoId: integer("repo_id").notNull(),
+    date: text("date").notNull(),
+    count: integer("count").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repoId, t.date] })],
+);
+
+export const commitWeeks = sqliteTable(
+  "commit_weeks",
+  {
+    repoId: integer("repo_id").notNull(),
+    week: text("week").notNull(),
+    commits: integer("commits").notNull(),
+    additions: integer("additions").notNull(),
+    deletions: integer("deletions").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repoId, t.week] })],
+);
