@@ -1,109 +1,31 @@
+import { cache } from "react";
 import type { Repo } from "@/lib/types";
 import { getRepoReferrers } from "./referrers";
-import { sumUniques } from "./sum-uniques";
 import type { Db } from "@/lib/db/client";
-import { getReferrerHistoryForRepos } from "@/lib/db/traffic";
+import { getReferrerTotals, type ReferrerHistory } from "@/lib/db/traffic";
 
-export async function getOwnerReferrers(
-  db: Db,
-  repos: Repo[],
-): Promise<{
-  referrers: Array<{
-    referrer: string;
-    data: Array<{ timestamp: string; count: number; uniques: number | null }>;
-  }>;
-}> {
-  let history: Awaited<ReturnType<typeof getReferrerHistoryForRepos>> =
-    new Map();
-  try {
-    history = await getReferrerHistoryForRepos(
-      db,
-      repos.map((repo) => repo.id),
-    );
-  } catch (error) {
-    console.error("Error fetching referrers history from D1:", error);
-  }
-  const repoReferrersPromises = repos.map((repo) =>
-    getRepoReferrers(
-      null,
-      db,
-      repo.full_name,
-      repo.id,
-      history.get(repo.id) ?? [],
-    ),
-  );
+const TOP_REFERRERS = 10;
 
-  const allRepoReferrers = await Promise.all(repoReferrersPromises);
-
-  const aggregatedReferrers = aggregateReferrersHistory(allRepoReferrers);
-
-  return {
-    referrers: aggregatedReferrers,
-  };
-}
-
-function aggregateReferrersHistory(
-  allRepoReferrers: Array<{
+export const getOwnerReferrers = cache(
+  async (
+    db: Db,
+    repos: Repo[],
+  ): Promise<{
     referrers: Array<{
       referrer: string;
       data: Array<{ timestamp: string; count: number; uniques: number | null }>;
     }>;
-  }>,
-): Array<{
-  referrer: string;
-  data: Array<{ timestamp: string; count: number; uniques: number | null }>;
-}> {
-  const referrerMap = new Map<
-    string,
-    Map<string, { count: number; uniques: number | null }>
-  >();
-
-  // Aggregate data from all repos
-  allRepoReferrers.forEach((repoReferrers) => {
-    repoReferrers.referrers.forEach(({ referrer, data }) => {
-      if (!referrerMap.has(referrer)) {
-        referrerMap.set(referrer, new Map());
-      }
-
-      const referrerDateMap = referrerMap.get(referrer)!;
-
-      data.forEach(({ timestamp, count, uniques }) => {
-        const existing = referrerDateMap.get(timestamp);
-        if (existing) {
-          referrerDateMap.set(timestamp, {
-            count: existing.count + count,
-            uniques: sumUniques(existing.uniques, uniques),
-          });
-        } else {
-          referrerDateMap.set(timestamp, { count, uniques });
-        }
-      });
-    });
-  });
-
-  // Convert back to array format
-  const referrers = Array.from(referrerMap.entries()).map(
-    ([referrer, dataMap]) => {
-      const sortedEntries = Array.from(dataMap.entries()).sort((a, b) =>
-        a[0].localeCompare(b[0]),
+  }> => {
+    let totals: ReferrerHistory[] = [];
+    try {
+      totals = await getReferrerTotals(
+        db,
+        repos.map((repo) => repo.id),
       );
-
-      const data = sortedEntries.map(([timestamp, { count, uniques }]) => ({
-        timestamp,
-        count,
-        uniques,
-      }));
-
-      return { referrer, data };
-    },
-  );
-
-  // Sort by total traffic (descending) and take top 10
-  referrers.sort((a, b) => {
-    const aTotal = a.data.reduce((sum, item) => sum + item.count, 0);
-    const bTotal = b.data.reduce((sum, item) => sum + item.count, 0);
-    return bTotal - aTotal;
-  });
-
-  return referrers.slice(0, 10);
-}
+    } catch (error) {
+      console.error("Error fetching referrers history from D1:", error);
+    }
+    const { referrers } = await getRepoReferrers(null, db, "", 0, totals);
+    return { referrers: referrers.slice(0, TOP_REFERRERS) };
+  },
+);

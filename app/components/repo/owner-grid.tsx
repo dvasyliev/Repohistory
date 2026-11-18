@@ -1,4 +1,5 @@
 import type { Repo } from "@/lib/types";
+import type { DailyHistory } from "@/lib/db/traffic";
 import { OwnerCard } from "./owner-card";
 
 interface OwnerData {
@@ -9,9 +10,10 @@ interface OwnerData {
 
 interface Props {
   reposByOwner: Record<string, Repo[]>;
+  recentViews: Map<number, DailyHistory[]>;
 }
 
-export function OwnerGrid({ reposByOwner }: Props) {
+export function OwnerGrid({ reposByOwner, recentViews }: Props) {
   const ownerData = Object.entries(reposByOwner).map(([owner, repos]) => ({
     owner,
     repos,
@@ -23,7 +25,13 @@ export function OwnerGrid({ reposByOwner }: Props) {
       {ownerData
         .sort((a, b) => b.totalStars - a.totalStars)
         .map((ownerData: OwnerData) => (
-          <OwnerCard key={ownerData.owner} ownerData={ownerData} />
+          <OwnerCard
+            key={ownerData.owner}
+            ownerData={ownerData}
+            views={ownerData.repos.map(
+              (repo) => recentViews.get(repo.id) ?? [],
+            )}
+          />
         ))}
     </div>
   );

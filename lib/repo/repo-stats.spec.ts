@@ -4,10 +4,12 @@ import type { Db } from "@/lib/db/client";
 import type { Repo } from "@/lib/types";
 
 const getForkHistoryForRepos = vi.hoisted(() => vi.fn());
+const getDailyCountTotals = vi.hoisted(() => vi.fn());
 const getCounterHistory = vi.hoisted(() => vi.fn());
 const fetchCommitWeeks = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/db/traffic", () => ({
   getForkHistoryForRepos,
+  getDailyCountTotals,
   getCounterHistory,
 }));
 vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitWeeks }));
@@ -64,19 +66,11 @@ describe("getRepoForks", () => {
 });
 
 describe("getOwnerForks", () => {
-  it("sums the repos' forks per day", async () => {
-    getForkHistoryForRepos.mockResolvedValue(
-      new Map([
-        [1, [{ date: "2026-11-01", count: 2 }]],
-        [
-          2,
-          [
-            { date: "2026-11-01", count: 1 },
-            { date: "2026-11-02", count: 4 },
-          ],
-        ],
-      ]),
-    );
+  it("builds the series from the forks summed per day", async () => {
+    getDailyCountTotals.mockResolvedValue([
+      { date: "2026-11-01", count: 3 },
+      { date: "2026-11-02", count: 4 },
+    ]);
     const result = await getOwnerForks(db, [{ id: 1 }, { id: 2 }] as Repo[]);
     expect(result.find((d) => d.date === "2026-11-01")).toMatchObject({
       daily: 3,
@@ -90,7 +84,7 @@ describe("getOwnerForks", () => {
 
   it("gives an empty series and logs when the D1 read fails", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    getForkHistoryForRepos.mockReturnValue(Promise.reject(new Error("down")));
+    getDailyCountTotals.mockReturnValue(Promise.reject(new Error("down")));
     expect(await getOwnerForks(db, [{ id: 1 }] as Repo[])).toEqual([]);
     expect(error).toHaveBeenCalled();
     error.mockRestore();

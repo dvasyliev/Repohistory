@@ -18,7 +18,7 @@ function RepoCardSkeleton() {
   );
 }
 
-export function RepoCardContentSkeleton() {
+function RepoCardContentSkeleton() {
   return (
     <>
       <Skeleton className="h-24 w-full" />

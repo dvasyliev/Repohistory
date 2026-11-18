@@ -1,7 +1,9 @@
+import { cache } from "react";
 import type { Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
 import {
   getCounterHistory,
+  getDailyCountTotals,
   getForkHistoryForRepos,
   type CounterHistory,
 } from "@/lib/db/traffic";
@@ -30,24 +32,23 @@ export async function getRepoForks(db: Db, repoId: number): Promise<ForkDay[]> {
   }
 }
 
-export async function getOwnerForks(db: Db, repos: Repo[]): Promise<ForkDay[]> {
-  try {
-    const byRepo = await getForkHistoryForRepos(
-      db,
-      repos.map((repo) => repo.id),
-    );
-    const daily: Record<string, number> = {};
-    for (const rows of byRepo.values()) {
-      for (const { date, count } of rows) {
-        daily[date] = (daily[date] ?? 0) + count;
-      }
+export const getOwnerForks = cache(
+  async (db: Db, repos: Repo[]): Promise<ForkDay[]> => {
+    try {
+      const totals = await getDailyCountTotals(
+        db,
+        "forks",
+        repos.map((repo) => repo.id),
+      );
+      return toForkDays(
+        Object.fromEntries(totals.map(({ date, count }) => [date, count])),
+      );
+    } catch (error) {
+      console.error("Error fetching forks from D1:", error);
+      return [];
     }
-    return toForkDays(daily);
-  } catch (error) {
-    console.error("Error fetching forks from D1:", error);
-    return [];
-  }
-}
+  },
+);
 
 export async function getRepoCounters(
   db: Db,

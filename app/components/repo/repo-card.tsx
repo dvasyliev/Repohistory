@@ -7,11 +7,16 @@ import {
 } from "@/app/components/ui/card";
 import { GitFork, Star } from "lucide-react";
 import type { Repo } from "@/lib/types";
-import { Suspense } from "react";
+import type { DailyHistory } from "@/lib/db/traffic";
 import { RepoCardContent } from "./repo-card-content";
-import { RepoCardContentSkeleton } from "./repo-card-skeleton";
 
-export function RepoCard({ repo }: { repo: Repo }) {
+export function RepoCard({
+  repo,
+  views,
+}: {
+  repo: Repo;
+  views: DailyHistory[];
+}) {
   return (
     <Link href={`/${repo.full_name}`}>
       <Card className="h-52 w-full cursor-pointer gap-2 transition-all duration-200 hover:bg-accent active:scale-99">
@@ -33,9 +38,7 @@ export function RepoCard({ repo }: { repo: Repo }) {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <Suspense fallback={<RepoCardContentSkeleton />}>
-            <RepoCardContent repo={repo} />
-          </Suspense>
+          <RepoCardContent series={[views]} />
         </CardContent>
       </Card>
     </Link>

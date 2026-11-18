@@ -1,4 +1,5 @@
-import { asc, eq, gte, inArray, and, sum } from "drizzle-orm";
+import { asc, desc, eq, gte, inArray, and, sql, sum } from "drizzle-orm";
+import { sumUniques } from "@/lib/repo/sum-uniques";
 import type { Db } from "./client";
 import {
   clones,
@@ -37,32 +38,128 @@ export async function getDailyHistoryForRepos(
   return groupByRepo(rows);
 }
 
-export async function getRecentViewTotals(
+export async function getRecentViewsForRepos(
   db: Db,
   repoIds: number[],
   since: string,
-): Promise<Map<number, number>> {
-  const totals = new Map<number, number>();
-  const chunks: number[][] = [];
-  for (let i = 0; i < repoIds.length; i += REPO_IDS_PER_QUERY) {
-    chunks.push(repoIds.slice(i, i + REPO_IDS_PER_QUERY));
-  }
-  const results = await Promise.all(
-    chunks.map((ids) =>
-      db
-        .select({ repoId: views.repoId, total: sum(views.total) })
-        .from(views)
-        .where(and(inArray(views.repoId, ids), gte(views.date, since)))
-        .groupBy(views.repoId),
-    ),
+): Promise<Map<number, DailyHistory[]>> {
+  if (repoIds.length === 0) return new Map();
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select()
+      .from(views)
+      .where(and(inArray(views.repoId, ids), gte(views.date, since)))
+      .orderBy(asc(views.date)),
   );
-  for (const rows of results) {
-    for (const { repoId, total } of rows) totals.set(repoId, Number(total));
-  }
-  return totals;
+  return groupByRepo(rows);
 }
 
-export async function getPathHistoryForRepos(
+export async function getDailyTotals(
+  db: Db,
+  table: "views" | "clones",
+  repoIds: number[],
+): Promise<DailyHistory[]> {
+  if (repoIds.length === 0) return [];
+  const t = table === "views" ? views : clones;
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select({
+        date: t.date,
+        total: sum(t.total).mapWith(Number),
+        unique: sum(t.unique).mapWith(Number),
+      })
+      .from(t)
+      .where(inArray(t.repoId, ids))
+      .groupBy(t.date),
+  );
+  return mergeByDate(rows, (a, b) => ({
+    date: a.date,
+    total: a.total + b.total,
+    unique: a.unique + b.unique,
+  }));
+}
+
+export async function getDailyCountTotals(
+  db: Db,
+  table: "stars" | "forks",
+  repoIds: number[],
+): Promise<Array<{ date: string; count: number }>> {
+  if (repoIds.length === 0) return [];
+  const t = table === "stars" ? stars : forks;
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select({ date: t.date, count: sum(t.count).mapWith(Number) })
+      .from(t)
+      .where(inArray(t.repoId, ids))
+      .groupBy(t.date),
+  );
+  return mergeByDate(rows, (a, b) => ({
+    date: a.date,
+    count: a.count + b.count,
+  }));
+}
+
+export async function getReferrerTotals(
+  db: Db,
+  repoIds: number[],
+): Promise<ReferrerHistory[]> {
+  if (repoIds.length === 0) return [];
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select({
+        date: referrers.date,
+        referrer: referrers.referrer,
+        total: sum(referrers.total).mapWith(Number),
+        unique: sql<number | null>`sum(${referrers.unique})`,
+      })
+      .from(referrers)
+      .where(inArray(referrers.repoId, ids))
+      .groupBy(referrers.referrer, referrers.date),
+  );
+  return mergeRows(
+    rows,
+    (row) => `${row.referrer}\n${row.date}`,
+    (a, b) => ({
+      ...a,
+      total: a.total + b.total,
+      unique: sumUniques(a.unique, b.unique),
+    }),
+  );
+}
+
+export async function getTopPathHistory(
+  db: Db,
+  repoIds: number[],
+  limit: number,
+): Promise<Array<PathHistory & { repoId: number }>> {
+  if (repoIds.length === 0) return [];
+  return queryChunks(repoIds, (ids) => {
+    const top = db
+      .select({ repoId: paths.repoId, path: paths.path })
+      .from(paths)
+      .where(inArray(paths.repoId, ids))
+      .groupBy(paths.repoId, paths.path)
+      .orderBy(desc(sum(paths.total)))
+      .limit(limit)
+      .as("top");
+    return db
+      .select({
+        repoId: paths.repoId,
+        path: paths.path,
+        date: paths.date,
+        total: paths.total,
+        unique: paths.unique,
+      })
+      .from(paths)
+      .innerJoin(
+        top,
+        and(eq(paths.repoId, top.repoId), eq(paths.path, top.path)),
+      )
+      .orderBy(asc(paths.date), asc(paths.repoId), asc(paths.path));
+  });
+}
+
+async function getPathHistoryForRepos(
   db: Db,
   repoIds: number[],
 ): Promise<Map<number, PathHistory[]>> {
@@ -77,7 +174,7 @@ export async function getPathHistoryForRepos(
   return groupByRepo(rows);
 }
 
-export async function getReferrerHistoryForRepos(
+async function getReferrerHistoryForRepos(
   db: Db,
   repoIds: number[],
 ): Promise<Map<number, ReferrerHistory[]>> {
@@ -94,7 +191,7 @@ export async function getReferrerHistoryForRepos(
 
 export type StarHistory = { date: string; count: number };
 
-export async function getStarHistoryForRepos(
+async function getStarHistoryForRepos(
   db: Db,
   repoIds: number[],
 ): Promise<Map<number, StarHistory[]>> {
@@ -194,6 +291,27 @@ async function queryChunks<T extends { date: string }>(
   }
   const results = await Promise.all(chunks.map(run));
   return results.flat().sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function mergeRows<T>(
+  rows: T[],
+  key: (row: T) => string,
+  add: (a: T, b: T) => T,
+): T[] {
+  const merged = new Map<string, T>();
+  for (const row of rows) {
+    const k = key(row);
+    const existing = merged.get(k);
+    merged.set(k, existing ? add(existing, row) : row);
+  }
+  return [...merged.values()];
+}
+
+function mergeByDate<T extends { date: string }>(
+  rows: T[],
+  add: (a: T, b: T) => T,
+): T[] {
+  return mergeRows(rows, (row) => row.date, add);
 }
 
 function groupByRepo<T extends { repoId: number }>(

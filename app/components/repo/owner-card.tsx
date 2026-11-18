@@ -7,9 +7,8 @@ import {
 } from "@/app/components/ui/card";
 import { Star, BookMarked } from "lucide-react";
 import type { Repo } from "@/lib/types";
-import { Suspense } from "react";
-import { OwnerCardContent } from "./owner-card-content";
-import { RepoCardContentSkeleton } from "./repo-card-skeleton";
+import type { DailyHistory } from "@/lib/db/traffic";
+import { RepoCardContent } from "./repo-card-content";
 
 interface OwnerData {
   owner: string;
@@ -17,7 +16,13 @@ interface OwnerData {
   totalStars: number;
 }
 
-export function OwnerCard({ ownerData }: { ownerData: OwnerData }) {
+export function OwnerCard({
+  ownerData,
+  views,
+}: {
+  ownerData: OwnerData;
+  views: DailyHistory[][];
+}) {
   return (
     <Link href={`/${ownerData.owner}`}>
       <Card className="h-52 w-full cursor-pointer gap-2 transition-all duration-200 hover:bg-accent active:scale-99">
@@ -37,9 +42,7 @@ export function OwnerCard({ ownerData }: { ownerData: OwnerData }) {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <Suspense fallback={<RepoCardContentSkeleton />}>
-            <OwnerCardContent repos={ownerData.repos} />
-          </Suspense>
+          <RepoCardContent series={views} />
         </CardContent>
       </Card>
     </Link>
