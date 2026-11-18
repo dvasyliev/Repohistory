@@ -36,16 +36,16 @@ function getStorageKey(fullName: string): string {
 
 function loadFromLocalStorage(fullName: string): string {
   if (typeof window === "undefined") {
-    return "14";
+    return "28";
   }
 
   try {
     const key = getStorageKey(fullName);
     const stored = localStorage.getItem(key);
-    return stored || "14";
+    return stored || "28";
   } catch (error) {
     console.error("Error loading date range from localStorage:", error);
-    return "14";
+    return "28";
   }
 }
 
@@ -76,7 +76,7 @@ export function DateRangeProvider({
   children,
   fullName,
 }: DateRangeProviderProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("14");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("28");
 
   useEffect(() => {
     const period = loadFromLocalStorage(fullName);
