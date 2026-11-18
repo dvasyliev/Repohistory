@@ -53,32 +53,28 @@ export function TopListCard({
         ) : items.length === 0 ? (
           <NoDataMessage dataType={dataType} hasAnyData={false} />
         ) : (
-          <ol className="flex min-h-64 flex-col gap-1.5">
+          <ol className="flex min-h-64 flex-col gap-3">
             {items.map((item) => (
-              <li
-                key={item.label}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm"
-              >
-                <div className="relative h-7 min-w-0">
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-sm bg-[#62C3F8]/25"
-                    style={{ width: `${(item.count / max) * 100}%` }}
-                  />
-                  <span
-                    className="relative block truncate px-2 leading-7"
-                    title={item.label}
-                  >
+              <li key={item.label} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <span className="min-w-0 truncate" title={item.label}>
                     {item.label}
                   </span>
+                  <span className="shrink-0 tabular-nums">
+                    {item.count.toLocaleString()}
+                    {item.uniques !== null && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({item.uniques.toLocaleString()} unique)
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <span className="text-right tabular-nums">
-                  {item.count.toLocaleString()}
-                  {item.uniques !== null && (
-                    <span className="ml-1 text-muted-foreground">
-                      ({item.uniques.toLocaleString()} unique)
-                    </span>
-                  )}
-                </span>
+                <div className="h-1.5 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-[#62C3F8]"
+                    style={{ width: `${(item.count / max) * 100}%` }}
+                  />
+                </div>
               </li>
             ))}
           </ol>
