@@ -12,6 +12,7 @@ test("shows the stars chart on the repo page", async ({ page }) => {
     .click();
   await expect(page).toHaveURL("/dvasyliev/react-crash-course");
 
+  await page.getByRole("button", { name: /^Stars/ }).click();
   await expect(
     page.getByText("Stars Over Time", { exact: true }),
   ).toBeVisible();
