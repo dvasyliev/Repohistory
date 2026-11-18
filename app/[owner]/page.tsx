@@ -50,7 +50,7 @@ export default async function OwnerPage({ params }: PageProps) {
         <Navbar ownerInfo={ownerInfo} />
         <div className="container mx-auto space-y-6 p-4 sm:p-10">
           <Suspense fallback={<StarsChart isLoading />}>
-            <OwnerStarsChartWrapper owner={owner} repos={ownerRepos} />
+            <OwnerStarsChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
             <OwnerViewChartWrapper repos={ownerRepos} db={db} />

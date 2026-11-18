@@ -1,17 +1,32 @@
-import type { Octokit } from "octokit";
+import type { Db } from "@/lib/db/client";
+import { getStarHistoryForRepos } from "@/lib/db/traffic";
 import type { Repo } from "@/lib/types";
 import type { RepoStarsData } from "./stars";
 import { getRepoStars } from "./stars";
 
 export async function getOwnerStars(
-  octokit: Octokit,
+  db: Db,
   repos: Repo[],
 ): Promise<RepoStarsData> {
+  let history: Awaited<ReturnType<typeof getStarHistoryForRepos>> = new Map();
+  try {
+    history = await getStarHistoryForRepos(
+      db,
+      repos.map((repo) => repo.id),
+    );
+  } catch (error) {
+    console.error("Error fetching stars history from D1:", error);
+  }
   const repoStarsPromises = repos.map((repo) =>
-    getRepoStars(octokit, {
-      fullName: repo.full_name,
-      stargazersCount: repo.stargazers_count,
-    }),
+    getRepoStars(
+      db,
+      {
+        id: repo.id,
+        fullName: repo.full_name,
+        stargazersCount: repo.stargazers_count,
+      },
+      history.get(repo.id) ?? [],
+    ),
   );
 
   const allRepoStars = await Promise.all(repoStarsPromises);

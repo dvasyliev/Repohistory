@@ -57,6 +57,8 @@ export default async function RepoPage({ params }: PageProps) {
           <Suspense fallback={<StarsChart isLoading />}>
             <StarsChartWrapper
               fullName={repoInfo.full_name}
+              repoId={repoInfo.id}
+              db={db}
               stargazersCount={repoInfo.stargazers_count}
             />
           </Suspense>

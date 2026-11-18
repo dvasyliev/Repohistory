@@ -8,21 +8,19 @@ import { getOwnerViews } from "@/lib/repo/owner-views";
 import { getOwnerClones } from "@/lib/repo/owner-clones";
 import { getOwnerReferrers } from "@/lib/repo/owner-referrers";
 import { getOwnerPaths } from "@/lib/repo/owner-paths";
-import { getInstallationOctokit } from "@/lib/octokit/installation";
 import type { Db } from "@/lib/db/client";
 import type { Repo } from "@/lib/types";
 
 interface OwnerStarsChartWrapperProps {
-  owner: string;
   repos: Repo[];
+  db: Db;
 }
 
 export async function OwnerStarsChartWrapper({
-  owner,
   repos,
+  db,
 }: OwnerStarsChartWrapperProps) {
-  const octokit = await getInstallationOctokit(owner);
-  const stars = await getOwnerStars(octokit, repos);
+  const stars = await getOwnerStars(db, repos);
   return <StarsChart starsData={stars} />;
 }
 

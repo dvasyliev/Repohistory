@@ -1,6 +1,6 @@
 import { asc, inArray } from "drizzle-orm";
 import type { Db } from "./client";
-import { clones, paths, referrers, views } from "./schema";
+import { clones, paths, referrers, stars, views } from "./schema";
 
 export type DailyHistory = { date: string; total: number; unique: number };
 export type PathHistory = {
@@ -57,6 +57,31 @@ export async function getReferrerHistoryForRepos(
       .orderBy(asc(referrers.date)),
   );
   return groupByRepo(rows);
+}
+
+export type StarHistory = { date: string; count: number };
+
+export async function getStarHistoryForRepos(
+  db: Db,
+  repoIds: number[],
+): Promise<Map<number, StarHistory[]>> {
+  if (repoIds.length === 0) return new Map();
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select()
+      .from(stars)
+      .where(inArray(stars.repoId, ids))
+      .orderBy(asc(stars.date)),
+  );
+  return groupByRepo(rows);
+}
+
+export async function getStarHistory(
+  db: Db,
+  repoId: number,
+): Promise<StarHistory[]> {
+  const byRepo = await getStarHistoryForRepos(db, [repoId]);
+  return byRepo.get(repoId) ?? [];
 }
 
 export async function getDailyHistory(

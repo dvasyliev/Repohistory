@@ -1,5 +1,7 @@
 import type { Octokit } from "octokit";
 import { unstable_cache } from "next/cache";
+import type { Db } from "@/lib/db/client";
+import { getStarHistory, type StarHistory } from "@/lib/db/traffic";
 
 export type StarWeek = { week: number; days: number[] };
 
@@ -97,19 +99,25 @@ const emptyStars = (): RepoStarsData => ({
 });
 
 export async function getRepoStars(
-  octokit: Octokit,
-  repo: { fullName: string; stargazersCount: number },
+  db: Db,
+  repo: { id: number; fullName: string; stargazersCount: number },
+  stored?: StarHistory[],
 ): Promise<RepoStarsData> {
   try {
-    const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
+    const rows = stored ?? (await getStarHistory(db, repo.id));
+    const daily = Object.fromEntries(rows.map((r) => [r.date, r.count]));
     return {
       totalStars: repo.stargazersCount,
       hasEstimatedData: false,
-      starsHistory: toCumulativeDays(toDailyStars(weeks)),
+      starsHistory: toCumulativeDays(daily),
     };
   } catch (error) {
-    console.error("Error fetching stars data:", error);
-    return emptyStars();
+    console.error("Error fetching stars from D1:", error);
+    return {
+      totalStars: repo.stargazersCount,
+      hasEstimatedData: false,
+      starsHistory: [],
+    };
   }
 }
 

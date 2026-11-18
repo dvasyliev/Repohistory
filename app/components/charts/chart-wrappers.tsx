@@ -15,15 +15,19 @@ import type { Db } from "@/lib/db/client";
 
 interface StarsChartWrapperProps {
   fullName: string;
+  repoId: number;
+  db: Db;
   stargazersCount: number;
 }
 
 export async function StarsChartWrapper({
   fullName,
+  repoId,
+  db,
   stargazersCount,
 }: StarsChartWrapperProps) {
-  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
-  const stars = await getRepoStars(octokit, {
+  const stars = await getRepoStars(db, {
+    id: repoId,
     fullName,
     stargazersCount,
   });

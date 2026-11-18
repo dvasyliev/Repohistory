@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Octokit } from "octokit";
+import type { Db } from "@/lib/db/client";
+
+const getStarHistory = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/db/traffic", () => ({ getStarHistory }));
 
 vi.mock("next/cache", () => ({
   unstable_cache: <T>(fn: () => Promise<T>) => fn,
@@ -7,6 +11,7 @@ vi.mock("next/cache", () => ({
 
 import { getRepoStars, getRepoStarsChart, toDailyStars } from "./stars";
 
+const db = {} as Db;
 const SUNDAY_2026_11_01 = Date.UTC(2026, 10, 1) / 1000;
 const SUNDAY_2026_11_08 = Date.UTC(2026, 10, 8) / 1000;
 
@@ -31,18 +36,13 @@ describe("toDailyStars", () => {
 });
 
 describe("getRepoStars", () => {
-  it("builds a cumulative daily series from the first star", async () => {
-    const { octokit } = fakeOctokit([
-      [
-        { week: SUNDAY_2026_11_08, days: [0, 1, 0, 0, 0, 0, 0] },
-        { week: SUNDAY_2026_11_01, days: [0, 0, 2, 0, 0, 0, 0] },
-      ],
-    ]);
+  const repo = { id: 1, fullName: "a/b", stargazersCount: 3 };
 
-    const result = await getRepoStars(octokit, {
-      fullName: "dvasyliev/react-crash-course",
-      stargazersCount: 3,
-    });
+  it("builds a cumulative daily series from the first stored day", async () => {
+    const result = await getRepoStars(db, repo, [
+      { date: "2026-11-03", count: 2 },
+      { date: "2026-11-09", count: 1 },
+    ]);
 
     expect(result.totalStars).toBe(3);
     expect(result.hasEstimatedData).toBe(false);
@@ -58,27 +58,26 @@ describe("getRepoStars", () => {
     ).toMatchObject({ daily: 1, cumulative: 3 });
   });
 
-  it("reads pages until one comes back short", async () => {
-    const fullPage = Array.from({ length: 30 }, (_, i) => ({
-      week: SUNDAY_2026_11_08 - i * 7 * 86400,
-      days: [0, 0, 0, 0, 0, 0, 0],
-    }));
-    const { octokit, request } = fakeOctokit([fullPage, []]);
-
-    await getRepoStars(octokit, { fullName: "a/b", stargazersCount: 0 });
-
-    expect(request).toHaveBeenCalledTimes(2);
+  it("reads the repo's rows when none are passed", async () => {
+    getStarHistory.mockResolvedValue([{ date: "2026-11-03", count: 2 }]);
+    const result = await getRepoStars(db, repo);
+    expect(getStarHistory).toHaveBeenCalledWith(db, 1);
+    expect(result.starsHistory.length).toBeGreaterThan(0);
   });
 
-  it("returns an empty history for a repo without stars", async () => {
-    const { octokit } = fakeOctokit([[]]);
+  it("gives the live total and no chart when D1 has no rows", async () => {
+    getStarHistory.mockResolvedValue([]);
+    const result = await getRepoStars(db, { ...repo, stargazersCount: 5 });
+    expect(result).toMatchObject({ totalStars: 5, starsHistory: [] });
+  });
 
-    const result = await getRepoStars(octokit, {
-      fullName: "a/b",
-      stargazersCount: 0,
-    });
-
-    expect(result.starsHistory).toEqual([]);
+  it("keeps the live total and logs when the D1 read fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    getStarHistory.mockReturnValue(Promise.reject(new Error("d1 down")));
+    const result = await getRepoStars(db, repo);
+    expect(result).toMatchObject({ totalStars: 3, starsHistory: [] });
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
   });
 });
 
