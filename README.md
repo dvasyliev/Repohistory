@@ -30,7 +30,7 @@ This fork differs from upstream:
 ## Deploy to Cloudflare
 
 1. Create a GitHub App (private, read-only): Administration (read), Contents (read), Metadata (read). Install it on your account. Note the App ID and download the private key.
-2. Copy `.env.example` to `.env.local` and fill it. Make the token with `openssl rand -hex 32`. Write `APP_PRIVATE_KEY` on one line with `\n` for line breaks. `NEXT_PUBLIC_SITE_URL` is read at build time, so set it before deploying.
+2. Copy `.env.example` to `.env.local` and fill it. Make the token with `openssl rand -hex 32`. Write `APP_PRIVATE_KEY` on one line with `\n` for line breaks. `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_GITHUB_APP_SLUG` (your App slug, used by the "Add Repos" button) are read at build time, so set them before deploying.
 3. Create the database: `npx wrangler d1 create repohistory`, then put its id in `wrangler.jsonc` and in `D1_DATABASE_ID`.
 4. Apply migrations: `npm run db:migrate:remote` (`npm run db:migrate:local` for local dev).
 5. Push the Worker secrets from `.env.local`: `npm run secrets:push` (or `npx wrangler secret put NAME` one by one).
