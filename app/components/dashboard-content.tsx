@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { DashboardViews } from "@/app/components/repo/dashboard-views";
 import { RepoGrid } from "@/app/components/repo/repo-grid";
 import { OwnerGrid } from "@/app/components/repo/owner-grid";
@@ -23,6 +24,7 @@ function sumViews14(recentViews: Map<number, DailyHistory[]>) {
 }
 
 export default async function DashboardContent() {
+  await connection();
   const { repos, reposByOwner } = await getRepos();
   const recentViews = await getRecentViewsForRepos(
     getDb(),
