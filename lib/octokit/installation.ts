@@ -1,27 +1,40 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Octokit } from "octokit";
+import { dailyCache } from "@/lib/daily-cache";
 import { getApp } from "./app";
 
-const listInstallations = cache(async () => {
-  const { data } = await getApp().octokit.rest.apps.listInstallations({
-    per_page: 100,
-  });
-  return data;
-});
+type Installation = { id: number; login: string };
 
-export const getInstallationOctokit = cache(
-  async (owner: string): Promise<Octokit> => {
+const listInstallations = dailyCache(
+  "github-installations",
+  async (): Promise<Installation[]> => {
+    const { data } = await getApp().octokit.rest.apps.listInstallations({
+      per_page: 100,
+    });
+    return data.flatMap((item) =>
+      item.suspended_at === null && item.account !== null
+        ? [{ id: item.id, login: item.account.login }]
+        : [],
+    );
+  },
+);
+
+export const getInstallationId = cache(
+  async (owner: string): Promise<number> => {
     const installations = await listInstallations();
     const installation = installations.find(
-      (item) =>
-        item.suspended_at === null &&
-        item.account !== null &&
-        item.account.login.toLowerCase() === owner.toLowerCase(),
+      (item) => item.login.toLowerCase() === owner.toLowerCase(),
     );
     if (!installation) {
       notFound();
     }
-    return getApp().getInstallationOctokit(installation.id);
+    return installation.id;
   },
+);
+
+// Never share an Octokit across requests: build it per request from the plain installation id.
+export const getOctokitForInstallation = cache(
+  (installationId: number): Promise<Octokit> =>
+    getApp().getInstallationOctokit(installationId),
 );

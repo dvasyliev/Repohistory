@@ -11,9 +11,9 @@ export function RevalidateOnFocus() {
   useEffect(() => {
     const handleWindowFocus = () => {
       const now = Date.now();
-      const oneMinute = 60 * 1000;
+      const fifteenMinutes = 15 * 60 * 1000;
 
-      if (now - lastRevalidateTime.current >= oneMinute) {
+      if (now - lastRevalidateTime.current >= fifteenMinutes) {
         void revalidatePage(pathname);
         lastRevalidateTime.current = now;
       }

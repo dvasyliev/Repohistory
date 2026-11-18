@@ -7,7 +7,7 @@ import {
 } from "@/app/components/charts/chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
 import { getRepoInfo } from "@/lib/repo/info";
-import { getInstallationOctokit } from "@/lib/octokit/installation";
+import { getInstallationId } from "@/lib/octokit/installation";
 import { getDb } from "@/lib/db/client";
 import { ReferrersChart } from "@/app/components/charts/referrers-chart";
 import { PopularContentChart } from "@/app/components/charts/popular-content-chart";
@@ -50,18 +50,18 @@ export default async function RepoPage({ params }: PageProps) {
 
   const db = getDb();
   const fullName = `${owner}/${repo}`;
-  const octokit = await getInstallationOctokit(owner);
-  const repoInfo = await getRepoInfo(octokit, owner, repo);
+  const installationId = await getInstallationId(owner);
+  const repoInfo = await getRepoInfo(installationId, owner, repo);
   const insights: RepoInsightsData = {
-    views: getRepoViews(octokit, db, fullName, repoInfo.id),
-    clones: getRepoClones(octokit, db, fullName, repoInfo.id),
+    views: getRepoViews(installationId, db, fullName, repoInfo.id),
+    clones: getRepoClones(installationId, db, fullName, repoInfo.id),
     stars: getRepoStars(db, {
       id: repoInfo.id,
       fullName: repoInfo.full_name,
       stargazersCount: repoInfo.stargazers_count,
     }),
     forks: getRepoForks(db, repoInfo.id),
-    commits: getRepoCommitWeeks(octokit, owner, repo),
+    commits: getRepoCommitWeeks(installationId, owner, repo),
     counters: getRepoCounters(db, repoInfo.id),
   };
 

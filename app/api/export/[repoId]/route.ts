@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getInstallationOctokit } from "@/lib/octokit/installation";
+import { getInstallationId } from "@/lib/octokit/installation";
 import { isHTTPAccessFallbackError } from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { getDb } from "@/lib/db/client";
 import { getRepoViews } from "@/lib/repo/views";
@@ -24,9 +24,9 @@ export async function GET(
       return new NextResponse("Invalid parameters", { status: 400 });
     }
 
-    let octokit;
+    let installationId;
     try {
-      octokit = await getInstallationOctokit(fullName.split("/")[0]);
+      installationId = await getInstallationId(fullName.split("/")[0]);
     } catch (error) {
       if (isHTTPAccessFallbackError(error)) {
         return new NextResponse("Not found", { status: 404 });
@@ -38,10 +38,10 @@ export async function GET(
     // Fetch all data in parallel
     const [viewsResult, clonesResult, referrersResult, pathsResult] =
       await Promise.allSettled([
-        getRepoViews(octokit, db, fullName, repoId),
-        getRepoClones(octokit, db, fullName, repoId),
-        getRepoReferrers(octokit, db, fullName, repoId),
-        getRepoPaths(octokit, db, fullName, repoId),
+        getRepoViews(installationId, db, fullName, repoId),
+        getRepoClones(installationId, db, fullName, repoId),
+        getRepoReferrers(installationId, db, fullName, repoId),
+        getRepoPaths(installationId, db, fullName, repoId),
       ]);
 
     const zip = new JSZip();

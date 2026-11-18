@@ -8,22 +8,24 @@ vi.mock("react", async (importOriginal) => {
 const notFound = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
+vi.mock("next/cache", () => ({
+  unstable_cache: <T>(fn: () => Promise<T>) => fn,
+}));
+
 vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
 
 const listInstallations = vi.fn();
-const getInstallationOctokit = vi.fn();
 const eachInstallation = vi.fn();
 const eachRepository = vi.fn();
 vi.mock("@/lib/octokit/app", () => ({
   getApp: () => ({
     octokit: { rest: { apps: { listInstallations } } },
-    getInstallationOctokit,
     eachInstallation,
     eachRepository,
   }),
 }));
 
-import { getInstallationOctokit as find } from "./installation";
+import { getInstallationId as find } from "./installation";
 import { getRepos } from "./get-repos";
 
 const installations = [
@@ -34,19 +36,15 @@ const installations = [
 beforeEach(() => {
   vi.clearAllMocks();
   listInstallations.mockResolvedValue({ data: installations });
-  getInstallationOctokit.mockImplementation((id: number) =>
-    Promise.resolve({ id }),
-  );
 });
 
-describe("getInstallationOctokit", () => {
+describe("getInstallationId", () => {
   it("matches the owner case-insensitively", async () => {
-    expect(await find("alice")).toEqual({ id: 1 });
+    expect(await find("alice")).toBe(1);
   });
 
   it("skips suspended installations", async () => {
     await expect(find("bob")).rejects.toThrow("NEXT_NOT_FOUND");
-    expect(getInstallationOctokit).not.toHaveBeenCalled();
   });
 
   it("calls notFound for an unknown owner", async () => {

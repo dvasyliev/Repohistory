@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
 import type { Repo } from "@/lib/types";
 
@@ -13,8 +12,20 @@ vi.mock("@/lib/db/traffic", () => ({
   getCounterHistory,
 }));
 vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitWeeks }));
+vi.mock("@/lib/octokit/installation", () => ({
+  getOctokitForInstallation: () => Promise.resolve({}),
+}));
 vi.mock("next/cache", () => ({
-  unstable_cache: <T>(fn: () => Promise<T>) => fn,
+  unstable_cache: <A extends unknown[], T>(fn: (...args: A) => Promise<T>) => {
+    const store = new Map<string, T>();
+    return async (...args: A) => {
+      const key = JSON.stringify(args);
+      if (store.has(key)) return store.get(key);
+      const value = await fn(...args);
+      store.set(key, value);
+      return value;
+    };
+  },
 }));
 
 import {
@@ -109,19 +120,26 @@ describe("getRepoCounters", () => {
 });
 
 describe("getRepoCommitWeeks", () => {
-  const octokit = {} as Octokit;
-
-  it("passes GitHub weeks through, and null while GitHub computes", async () => {
+  it("passes GitHub weeks through and caches them", async () => {
     const weeks = [{ week: "2026-11-01", commits: 1 }];
-    fetchCommitWeeks.mockResolvedValueOnce(weeks).mockResolvedValueOnce(null);
-    expect(await getRepoCommitWeeks(octokit, "o", "r")).toEqual(weeks);
-    expect(await getRepoCommitWeeks(octokit, "o", "r")).toBeNull();
+    fetchCommitWeeks.mockReset().mockResolvedValue(weeks);
+    expect(await getRepoCommitWeeks(1, "o", "a")).toEqual(weeks);
+    expect(await getRepoCommitWeeks(1, "o", "a")).toEqual(weeks);
+    expect(fetchCommitWeeks).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives null while GitHub computes and asks again next time", async () => {
+    const weeks = [{ week: "2026-11-01", commits: 2 }];
+    fetchCommitWeeks.mockReset().mockResolvedValueOnce(null);
+    fetchCommitWeeks.mockResolvedValueOnce(weeks);
+    expect(await getRepoCommitWeeks(1, "o", "b")).toBeNull();
+    expect(await getRepoCommitWeeks(1, "o", "b")).toEqual(weeks);
   });
 
   it("gives an empty list and logs when GitHub fails", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    fetchCommitWeeks.mockReturnValue(Promise.reject(new Error("down")));
-    expect(await getRepoCommitWeeks(octokit, "o", "r")).toEqual([]);
+    fetchCommitWeeks.mockReset().mockRejectedValue(new Error("down"));
+    expect(await getRepoCommitWeeks(1, "o", "c")).toEqual([]);
     expect(error).toHaveBeenCalledTimes(1);
     error.mockRestore();
   });

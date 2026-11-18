@@ -1,9 +1,23 @@
-import type { Octokit } from "octokit";
 import { getDailyHistory, type DailyHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
+import { dailyCache } from "@/lib/daily-cache";
+import { getOctokitForInstallation } from "@/lib/octokit/installation";
+
+const fetchGithubViews = dailyCache(
+  "github-views",
+  async (installationId: number, owner: string, repo: string) => {
+    const octokit = await getOctokitForInstallation(installationId);
+    const { data } = await octokit.rest.repos.getViews({ owner, repo });
+    return data.views.map((item) => ({
+      date: item.timestamp.split("T")[0],
+      count: item.count,
+      uniques: item.uniques,
+    }));
+  },
+);
 
 export async function getRepoViews(
-  octokit: Octokit | null,
+  installationId: number | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -19,7 +33,9 @@ export async function getRepoViews(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getDailyHistory(db, "views", repoId),
-      octokit?.rest.repos.getViews({ owner, repo }) ?? null,
+      installationId === null
+        ? null
+        : fetchGithubViews(installationId, owner, repo),
     ]);
 
     // Process stored data
@@ -32,13 +48,7 @@ export async function getRepoViews(
 
     // Process GitHub data
     const githubData =
-      githubResult.status === "fulfilled" && githubResult.value
-        ? githubResult.value.data.views?.map((item) => ({
-            date: item.timestamp.split("T")[0],
-            count: item.count,
-            uniques: item.uniques,
-          })) || []
-        : [];
+      (githubResult.status === "fulfilled" && githubResult.value) || [];
 
     if (githubResult.status === "rejected") {
       console.error(

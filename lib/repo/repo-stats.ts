@@ -1,5 +1,4 @@
 import { cache } from "react";
-import type { Octokit } from "octokit";
 import type { Db } from "@/lib/db/client";
 import {
   getCounterHistory,
@@ -9,6 +8,8 @@ import {
 } from "@/lib/db/traffic";
 import { fetchCommitWeeks, type CommitWeek } from "@/lib/repo/github-stats";
 import type { Repo } from "@/lib/types";
+import { dailyCache } from "@/lib/daily-cache";
+import { getOctokitForInstallation } from "@/lib/octokit/installation";
 import { toCumulativeDays } from "./stars";
 
 export type ForkDay = { date: string; daily: number; cumulative: number };
@@ -62,14 +63,27 @@ export async function getRepoCounters(
   }
 }
 
+class StillCountingError extends Error {}
+
+const fetchCachedCommitWeeks = dailyCache(
+  "github-commit-weeks",
+  async (installationId: number, owner: string, repo: string) => {
+    const octokit = await getOctokitForInstallation(installationId);
+    const weeks = await fetchCommitWeeks(octokit, owner, repo);
+    if (weeks === null) throw new StillCountingError();
+    return weeks;
+  },
+);
+
 export async function getRepoCommitWeeks(
-  octokit: Octokit,
+  installationId: number,
   owner: string,
   repo: string,
 ): Promise<CommitWeek[] | null> {
   try {
-    return await fetchCommitWeeks(octokit, owner, repo);
+    return await fetchCachedCommitWeeks(installationId, owner, repo);
   } catch (error) {
+    if (error instanceof StillCountingError) return null;
     console.error("Error fetching commit activity from GitHub:", error);
     return [];
   }

@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       randomInstallation.id,
     );
 
-    const repoInfo = await getRepoInfo(octokit, owner, repo);
+    const repoInfo = await getRepoInfo(randomInstallation.id, owner, repo);
 
     const repoStarsData = await getRepoStarsChart(octokit, {
       fullName: fullName,

@@ -1,9 +1,24 @@
-import type { Octokit } from "octokit";
 import { getPathHistory, type PathHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
+import { dailyCache } from "@/lib/daily-cache";
+import { getOctokitForInstallation } from "@/lib/octokit/installation";
+
+const fetchGithubPaths = dailyCache(
+  "github-paths",
+  async (installationId: number, owner: string, repo: string) => {
+    const octokit = await getOctokitForInstallation(installationId);
+    const { data } = await octokit.rest.repos.getTopPaths({ owner, repo });
+    return data.map(({ path, title, count, uniques }) => ({
+      path,
+      title,
+      count,
+      uniques,
+    }));
+  },
+);
 
 export async function getRepoPaths(
-  octokit: Octokit | null,
+  installationId: number | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -21,7 +36,9 @@ export async function getRepoPaths(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getPathHistory(db, repoId),
-      octokit?.rest.repos.getTopPaths({ owner, repo }) ?? null,
+      installationId === null
+        ? null
+        : fetchGithubPaths(installationId, owner, repo),
     ]);
 
     // Process stored data
@@ -34,7 +51,7 @@ export async function getRepoPaths(
     // Process GitHub data
     const githubData =
       githubResult.status === "fulfilled" && githubResult.value
-        ? githubResult.value.data?.map((item) => ({
+        ? githubResult.value.map((item) => ({
             path: item.path.replace(/^\/[^/]+\/[^/]+/, "") || "/",
             title: item.title,
             count: item.count,

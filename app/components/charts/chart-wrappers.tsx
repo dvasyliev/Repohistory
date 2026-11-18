@@ -2,7 +2,7 @@ import { ReferrersChart } from "./referrers-chart";
 import { PopularContentChart } from "./popular-content-chart";
 import { getRepoReferrers } from "@/lib/repo/referrers";
 import { getRepoPaths } from "@/lib/repo/paths";
-import { getInstallationOctokit } from "@/lib/octokit/installation";
+import { getInstallationId } from "@/lib/octokit/installation";
 import type { Db } from "@/lib/db/client";
 
 interface TrafficChartWrapperProps {
@@ -16,8 +16,13 @@ export async function ReferrersChartWrapper({
   repoId,
   db,
 }: TrafficChartWrapperProps) {
-  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
-  const { referrers } = await getRepoReferrers(octokit, db, fullName, repoId);
+  const installationId = await getInstallationId(fullName.split("/")[0]);
+  const { referrers } = await getRepoReferrers(
+    installationId,
+    db,
+    fullName,
+    repoId,
+  );
   return <ReferrersChart traffic={{ referrers }} />;
 }
 
@@ -26,7 +31,7 @@ export async function PopularContentChartWrapper({
   repoId,
   db,
 }: TrafficChartWrapperProps) {
-  const octokit = await getInstallationOctokit(fullName.split("/")[0]);
-  const { paths } = await getRepoPaths(octokit, db, fullName, repoId);
+  const installationId = await getInstallationId(fullName.split("/")[0]);
+  const { paths } = await getRepoPaths(installationId, db, fullName, repoId);
   return <PopularContentChart traffic={{ paths }} />;
 }

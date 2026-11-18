@@ -1,9 +1,23 @@
-import type { Octokit } from "octokit";
 import { getReferrerHistory, type ReferrerHistory } from "@/lib/db/traffic";
 import type { Db } from "@/lib/db/client";
+import { dailyCache } from "@/lib/daily-cache";
+import { getOctokitForInstallation } from "@/lib/octokit/installation";
+
+const fetchGithubReferrers = dailyCache(
+  "github-referrers",
+  async (installationId: number, owner: string, repo: string) => {
+    const octokit = await getOctokitForInstallation(installationId);
+    const { data } = await octokit.rest.repos.getTopReferrers({ owner, repo });
+    return data.map(({ referrer, count, uniques }) => ({
+      referrer,
+      count,
+      uniques,
+    }));
+  },
+);
 
 export async function getRepoReferrers(
-  octokit: Octokit | null,
+  installationId: number | null,
   db: Db,
   fullName: string,
   repoId: number,
@@ -20,7 +34,9 @@ export async function getRepoReferrers(
     // Fetch data from both sources in parallel
     const [storedResult, githubResult] = await Promise.allSettled([
       stored ?? getReferrerHistory(db, repoId),
-      octokit?.rest.repos.getTopReferrers({ owner, repo }) ?? null,
+      installationId === null
+        ? null
+        : fetchGithubReferrers(installationId, owner, repo),
     ]);
 
     // Process stored data
@@ -33,7 +49,7 @@ export async function getRepoReferrers(
     // Process GitHub data
     const githubData =
       githubResult.status === "fulfilled" && githubResult.value
-        ? githubResult.value.data?.map((item) => ({
+        ? githubResult.value.map((item) => ({
             referrer: item.referrer,
             count: item.count,
             uniques: item.uniques,
