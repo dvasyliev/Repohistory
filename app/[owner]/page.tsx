@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { DateRangeProvider } from "@/lib/contexts/date-range-context";
 import {
   OwnerStarsChartWrapper,
+  OwnerForksChartWrapper,
   OwnerViewChartWrapper,
   OwnerCloneChartWrapper,
   OwnerReferrersChartWrapper,
@@ -12,6 +13,7 @@ import { getRepos } from "@/lib/octokit/get-repos";
 import { getDb } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { StarsChart } from "@/app/components/charts/stars-chart";
+import { ForksChart } from "@/app/components/charts/forks-chart";
 import { ViewChart } from "@/app/components/charts/view-chart";
 import { CloneChart } from "@/app/components/charts/clone-chart";
 import { ReferrersChart } from "@/app/components/charts/referrers-chart";
@@ -51,6 +53,9 @@ export default async function OwnerPage({ params }: PageProps) {
         <div className="container mx-auto space-y-6 p-4 sm:p-10">
           <Suspense fallback={<StarsChart isLoading />}>
             <OwnerStarsChartWrapper repos={ownerRepos} db={db} />
+          </Suspense>
+          <Suspense fallback={<ForksChart isLoading />}>
+            <OwnerForksChartWrapper repos={ownerRepos} db={db} />
           </Suspense>
           <Suspense fallback={<ViewChart isLoading />}>
             <OwnerViewChartWrapper repos={ownerRepos} db={db} />

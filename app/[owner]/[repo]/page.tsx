@@ -8,6 +8,9 @@ import {
   ReferrersChartWrapper,
   PopularContentChartWrapper,
   ReleaseChartWrapper,
+  ForksChartWrapper,
+  CountersChartWrapper,
+  CommitActivityChartWrapper,
 } from "@/app/components/charts/chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
 import { getRepoInfo } from "@/lib/repo/info";
@@ -19,6 +22,9 @@ import { CloneChart } from "@/app/components/charts/clone-chart";
 import { ReferrersChart } from "@/app/components/charts/referrers-chart";
 import { PopularContentChart } from "@/app/components/charts/popular-content-chart";
 import { ReleaseChart } from "@/app/components/charts/release-chart";
+import { ForksChart } from "@/app/components/charts/forks-chart";
+import { CountersChart } from "@/app/components/charts/counters-chart";
+import { CommitActivityChart } from "@/app/components/charts/commit-activity-chart";
 
 interface PageProps {
   params: Promise<{
@@ -92,6 +98,15 @@ export default async function RepoPage({ params }: PageProps) {
           </Suspense>
           <Suspense fallback={<ReleaseChart isLoading />}>
             <ReleaseChartWrapper fullName={fullName} />
+          </Suspense>
+          <Suspense fallback={<ForksChart isLoading />}>
+            <ForksChartWrapper repoId={repoInfo.id} db={db} />
+          </Suspense>
+          <Suspense fallback={<CountersChart isLoading />}>
+            <CountersChartWrapper repoId={repoInfo.id} db={db} />
+          </Suspense>
+          <Suspense fallback={<CommitActivityChart isLoading />}>
+            <CommitActivityChartWrapper repoId={repoInfo.id} db={db} />
           </Suspense>
         </div>
       </div>

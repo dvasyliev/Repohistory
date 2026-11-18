@@ -3,6 +3,8 @@ import { ViewChart } from "./view-chart";
 import { CloneChart } from "./clone-chart";
 import { ReferrersChart } from "./referrers-chart";
 import { PopularContentChart } from "./popular-content-chart";
+import { ForksChart } from "./forks-chart";
+import { getOwnerForks } from "@/lib/repo/repo-stats";
 import { getOwnerStars } from "@/lib/repo/owner-stars";
 import { getOwnerViews } from "@/lib/repo/owner-views";
 import { getOwnerClones } from "@/lib/repo/owner-clones";
@@ -74,4 +76,12 @@ export async function OwnerPopularContentChartWrapper({
 }: OwnerPopularContentChartWrapperProps) {
   const { paths } = await getOwnerPaths(db, repos);
   return <PopularContentChart traffic={{ paths }} />;
+}
+
+export async function OwnerForksChartWrapper({
+  repos,
+  db,
+}: OwnerStarsChartWrapperProps) {
+  const forks = await getOwnerForks(db, repos);
+  return <ForksChart forksData={forks} />;
 }

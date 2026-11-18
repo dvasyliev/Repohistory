@@ -4,12 +4,20 @@ import { CloneChart } from "./clone-chart";
 import { ReferrersChart } from "./referrers-chart";
 import { PopularContentChart } from "./popular-content-chart";
 import { ReleaseChart } from "./release-chart";
+import { ForksChart } from "./forks-chart";
+import { CountersChart } from "./counters-chart";
+import { CommitActivityChart } from "./commit-activity-chart";
 import { getRepoStars } from "@/lib/repo/stars";
 import { getRepoViews } from "@/lib/repo/views";
 import { getRepoClones } from "@/lib/repo/clones";
 import { getRepoReferrers } from "@/lib/repo/referrers";
 import { getRepoPaths } from "@/lib/repo/paths";
 import { getRepoReleases } from "@/lib/repo/releases";
+import {
+  getRepoCommitWeeks,
+  getRepoCounters,
+  getRepoForks,
+} from "@/lib/repo/repo-stats";
 import { getInstallationOctokit } from "@/lib/octokit/installation";
 import type { Db } from "@/lib/db/client";
 
@@ -109,4 +117,33 @@ export async function ReleaseChartWrapper({
   const [owner, repo] = fullName.split("/");
   const releases = await getRepoReleases(octokit, owner, repo);
   return <ReleaseChart releasesData={releases} />;
+}
+
+interface RepoStatsChartWrapperProps {
+  repoId: number;
+  db: Db;
+}
+
+export async function ForksChartWrapper({
+  repoId,
+  db,
+}: RepoStatsChartWrapperProps) {
+  const forks = await getRepoForks(db, repoId);
+  return <ForksChart forksData={forks} />;
+}
+
+export async function CountersChartWrapper({
+  repoId,
+  db,
+}: RepoStatsChartWrapperProps) {
+  const counters = await getRepoCounters(db, repoId);
+  return <CountersChart counters={counters} />;
+}
+
+export async function CommitActivityChartWrapper({
+  repoId,
+  db,
+}: RepoStatsChartWrapperProps) {
+  const weeks = await getRepoCommitWeeks(db, repoId);
+  return <CommitActivityChart weeks={weeks} />;
 }

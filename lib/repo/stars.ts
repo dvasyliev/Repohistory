@@ -59,7 +59,7 @@ export function toDailyStars(weeks: StarWeek[]): Record<string, number> {
   return daily;
 }
 
-function toCumulativeDays(dailyStars: Record<string, number>) {
+export function toCumulativeDays(dailyStars: Record<string, number>) {
   const dates = Object.keys(dailyStars).sort();
   if (dates.length === 0) return [];
 

@@ -1,6 +1,15 @@
-import { asc, gte, inArray, and, sum } from "drizzle-orm";
+import { asc, eq, gte, inArray, and, sum } from "drizzle-orm";
 import type { Db } from "./client";
-import { clones, paths, referrers, stars, views } from "./schema";
+import {
+  clones,
+  commitWeeks,
+  forks,
+  paths,
+  referrers,
+  repoCounters,
+  stars,
+  views,
+} from "./schema";
 
 export type DailyHistory = { date: string; total: number; unique: number };
 export type PathHistory = {
@@ -107,6 +116,71 @@ export async function getStarHistory(
 ): Promise<StarHistory[]> {
   const byRepo = await getStarHistoryForRepos(db, [repoId]);
   return byRepo.get(repoId) ?? [];
+}
+
+export type ForkHistory = { date: string; count: number };
+export type CounterHistory = {
+  date: string;
+  stars: number;
+  forks: number;
+  watchers: number;
+  openIssues: number;
+};
+export type CommitWeek = {
+  week: string;
+  commits: number;
+  additions: number;
+  deletions: number;
+};
+
+export async function getForkHistoryForRepos(
+  db: Db,
+  repoIds: number[],
+): Promise<Map<number, ForkHistory[]>> {
+  if (repoIds.length === 0) return new Map();
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select()
+      .from(forks)
+      .where(inArray(forks.repoId, ids))
+      .orderBy(asc(forks.date)),
+  );
+  return groupByRepo(rows);
+}
+
+export async function getCounterHistory(
+  db: Db,
+  repoId: number,
+): Promise<CounterHistory[]> {
+  const rows = await db
+    .select()
+    .from(repoCounters)
+    .where(eq(repoCounters.repoId, repoId))
+    .orderBy(asc(repoCounters.date));
+  return rows.map(({ date, stars, forks, watchers, openIssues }) => ({
+    date,
+    stars,
+    forks,
+    watchers,
+    openIssues,
+  }));
+}
+
+export async function getCommitWeeks(
+  db: Db,
+  repoId: number,
+): Promise<CommitWeek[]> {
+  const rows = await db
+    .select()
+    .from(commitWeeks)
+    .where(eq(commitWeeks.repoId, repoId))
+    .orderBy(asc(commitWeeks.week));
+  return rows.map(({ week, commits, additions, deletions }) => ({
+    week,
+    commits,
+    additions,
+    deletions,
+  }));
 }
 
 export async function getDailyHistory(
