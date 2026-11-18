@@ -20,6 +20,8 @@ const command =
 export default defineConfig({
   testDir: "tests",
   fullyParallel: true,
+  // Two specs opening the repo page at once hang the dev server on its first compile of that route.
+  workers: 1,
   forbidOnly: !!process.env.CI,
   reporter: "list",
   // The tests never retry, so a trace is kept for every failure instead.
