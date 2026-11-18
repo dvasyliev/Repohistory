@@ -50,3 +50,13 @@ export const referrers = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.repoId, t.referrer, t.date] })],
 );
+
+export const stars = sqliteTable(
+  "stars",
+  {
+    repoId: integer("repo_id").notNull(),
+    date: text("date").notNull(),
+    count: integer("count").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repoId, t.date] })],
+);

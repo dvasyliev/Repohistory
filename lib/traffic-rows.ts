@@ -1,10 +1,13 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
-import { clones, paths, referrers, views } from "@/lib/db/schema";
+import { clones, paths, referrers, stars, views } from "@/lib/db/schema";
+import { toDailyStars, type StarWeek } from "@/lib/repo/stars";
 
 export type DailyRow = typeof views.$inferInsert;
 export type PathRow = typeof paths.$inferInsert;
 export type ReferrerRow = typeof referrers.$inferInsert;
+
+export type StarRow = typeof stars.$inferInsert;
 
 type Counts = { count: number; uniques: number };
 
@@ -59,6 +62,14 @@ export function toReferrerRows(
   }));
 }
 
+export function toStarRows(repoId: number, weeks: StarWeek[]): StarRow[] {
+  return Object.entries(toDailyStars(weeks)).map(([date, count]) => ({
+    repoId,
+    date,
+    count,
+  }));
+}
+
 const ROWS_PER_STATEMENT = 20;
 const ROWS_PER_BATCH = 500;
 const STATEMENTS_PER_BATCH = ROWS_PER_BATCH / ROWS_PER_STATEMENT;
@@ -78,6 +89,7 @@ export async function upsertTraffic(
     clones: DailyRow[];
     paths: PathRow[];
     referrers: ReferrerRow[];
+    stars?: StarRow[];
   },
 ): Promise<void> {
   const set = { total: sql`excluded.total`, unique: sql`excluded."unique"` };
@@ -110,6 +122,15 @@ export async function upsertTraffic(
         .onConflictDoUpdate({
           target: [referrers.repoId, referrers.referrer, referrers.date],
           set,
+        }),
+    ),
+    ...chunk(rows.stars ?? [], ROWS_PER_STATEMENT).map((values) =>
+      db
+        .insert(stars)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [stars.repoId, stars.date],
+          set: { count: sql`excluded.count` },
         }),
     ),
   ];

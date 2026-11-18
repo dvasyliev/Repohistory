@@ -5,6 +5,7 @@ import {
   toDailyRows,
   toPathRows,
   toReferrerRows,
+  toStarRows,
   upsertTraffic,
   type DailyRow,
 } from "./traffic-rows";
@@ -76,6 +77,20 @@ describe("toReferrerRows", () => {
   });
 });
 
+describe("toStarRows", () => {
+  it("makes one row per day with stars", () => {
+    expect(
+      toStarRows(1, [
+        { week: Date.UTC(2026, 10, 1) / 1000, days: [1, 0, 2, 0, 0, 0, 3] },
+      ]),
+    ).toEqual([
+      { repoId: 1, date: "2026-11-01", count: 1 },
+      { repoId: 1, date: "2026-11-03", count: 2 },
+      { repoId: 1, date: "2026-11-07", count: 3 },
+    ]);
+  });
+});
+
 describe("upsertTraffic", () => {
   function recordingDb() {
     const batches: { sql: string; params: unknown[] }[][] = [];
@@ -130,5 +145,23 @@ describe("upsertTraffic", () => {
       referrers: [],
     });
     expect(batches).toHaveLength(0);
+  });
+
+  it("splits 45 star rows into 3 statements of at most 20 rows", async () => {
+    const { db, batches } = recordingDb();
+    await upsertTraffic(db, {
+      views: [],
+      clones: [],
+      paths: [],
+      referrers: [],
+      stars: Array.from({ length: 45 }, (_, i) => ({
+        repoId: 1,
+        date: `2025-01-${String(i).padStart(3, "0")}`,
+        count: i + 1,
+      })),
+    });
+    expect(batches[0].map((s) => s.params.length / 3)).toEqual([20, 20, 5]);
+    expect(batches[0][0].sql).toContain("on conflict");
+    expect(batches[0][0].sql).toContain('"stars"');
   });
 });

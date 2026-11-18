@@ -1,7 +1,7 @@
 import type { Octokit } from "octokit";
 import { unstable_cache } from "next/cache";
 
-type StarWeek = { week: number; days: number[] };
+export type StarWeek = { week: number; days: number[] };
 
 const WEEKS_PER_PAGE = 30;
 const MAX_PAGES = 100;
@@ -20,7 +20,7 @@ export interface RepoStarsData {
 
 const toIsoDate = (ms: number) => new Date(ms).toISOString().split("T")[0];
 
-async function fetchStarWeeksUncached(
+export async function fetchStarWeeks(
   octokit: Octokit,
   fullName: string,
 ): Promise<StarWeek[]> {
@@ -39,9 +39,9 @@ async function fetchStarWeeksUncached(
   return weeks;
 }
 
-function fetchStarWeeks(octokit: Octokit, fullName: string) {
+function fetchStarWeeksCached(octokit: Octokit, fullName: string) {
   return unstable_cache(
-    () => fetchStarWeeksUncached(octokit, fullName),
+    () => fetchStarWeeks(octokit, fullName),
     ["star-weeks", fullName],
     { revalidate: 21_600, tags: [`stargazers-${fullName}`] },
   )();
@@ -101,7 +101,7 @@ export async function getRepoStars(
   repo: { fullName: string; stargazersCount: number },
 ): Promise<RepoStarsData> {
   try {
-    const weeks = await fetchStarWeeks(octokit, repo.fullName);
+    const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
     return {
       totalStars: repo.stargazersCount,
       hasEstimatedData: false,
@@ -118,7 +118,7 @@ export async function getRepoStarsChart(
   repo: { fullName: string; stargazersCount: number },
 ): Promise<RepoStarsData> {
   try {
-    const weeks = await fetchStarWeeks(octokit, repo.fullName);
+    const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
     return {
       totalStars: repo.stargazersCount,
       hasEstimatedData: false,
