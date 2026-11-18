@@ -13,10 +13,7 @@ import {
   sumInRange,
   type MetricSummary,
 } from "@/lib/repo/metric-summary";
-import {
-  chartParser,
-  type ChartId,
-} from "@/app/[owner]/[repo]/_lib/chart-param";
+import { chartParser, type ChartId } from "@/lib/chart-param";
 import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { commitSeries } from "@/lib/repo/commit-series";
 import { MetricTile } from "./metric-tile";
@@ -57,7 +54,7 @@ const WatchersChart = dynamic(
 
 type Traffic = { timestamp: string; count: number; uniques: number };
 
-export interface RepoInsightsData {
+export interface InsightsData {
   views: Promise<{ count: number; uniques: number; views: Traffic[] }>;
   clones: Promise<{ count: number; uniques: number; clones: Traffic[] }>;
   stars: Promise<RepoStarsData>;
@@ -114,7 +111,7 @@ function SelectedChart({
   data,
 }: {
   chart: ChartId;
-  data: RepoInsightsData;
+  data: InsightsData;
 }) {
   switch (chart) {
     case "views":
@@ -156,7 +153,7 @@ function SelectedChart({
   }
 }
 
-export function RepoInsights({ data }: { data: RepoInsightsData }) {
+export function Insights({ data }: { data: InsightsData }) {
   const [chart, setChart] = useQueryState("chart", chartParser);
   const tile = (id: ChartId) => ({
     selected: chart === id,

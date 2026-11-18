@@ -11,3 +11,20 @@ export function commitSeries(
   if (firstWeek && days.length > 0 && firstWeek < days[0].date) return weeks;
   return firstWeek ? days.filter(({ date }) => date >= firstWeek) : days;
 }
+
+function sumByDate(lists: CommitDay[][]): CommitDay[] {
+  const totals = new Map<string, number>();
+  for (const { date, commits } of lists.flat()) {
+    totals.set(date, (totals.get(date) ?? 0) + commits);
+  }
+  return [...totals]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, commits]) => ({ date, commits }));
+}
+
+export function sumCommitHistories(histories: CommitHistory[]): CommitHistory {
+  return {
+    days: sumByDate(histories.map(({ days }) => days)),
+    weeks: sumByDate(histories.map(({ weeks }) => weeks)),
+  };
+}

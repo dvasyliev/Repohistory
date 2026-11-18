@@ -32,7 +32,7 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
   return (
     <div className={className}>
       <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
-        <SelectTrigger className="cursor-pointer gap-2">
+        <SelectTrigger aria-label="Date range" className="cursor-pointer gap-2">
           <CalendarDays className="h-4 w-4" />
           <SelectValue />
         </SelectTrigger>

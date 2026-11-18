@@ -55,11 +55,13 @@ export function TopListCard({
         ) : (
           <ol className="flex min-h-64 flex-col gap-3">
             {items.map((item) => (
-              <li key={item.label} className="flex flex-col gap-1">
+              <li
+                key={item.label}
+                className="flex flex-col gap-1"
+                title={item.label}
+              >
                 <div className="flex items-baseline justify-between gap-3 text-xs">
-                  <span className="min-w-0 truncate" title={item.label}>
-                    {item.label}
-                  </span>
+                  <span className="min-w-0 truncate">{item.label}</span>
                   <span className="shrink-0 tabular-nums">
                     {item.count.toLocaleString()}
                     {item.uniques !== null && (

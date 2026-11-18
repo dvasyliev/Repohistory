@@ -74,7 +74,12 @@ export function Navbar({ repoInfo, ownerInfo }: NavbarProps) {
           <div className="hidden md:block">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-9"
+                  aria-label="More actions"
+                >
                   <MoreHorizontalIcon className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

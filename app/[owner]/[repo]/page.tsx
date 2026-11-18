@@ -21,9 +21,9 @@ import {
   getRepoForks,
 } from "@/lib/repo/repo-stats";
 import {
-  RepoInsights,
-  type RepoInsightsData,
-} from "@/app/[owner]/[repo]/_components/repo-insights";
+  Insights,
+  type InsightsData,
+} from "@/app/components/insights/insights";
 
 interface PageProps {
   params: Promise<{
@@ -53,7 +53,7 @@ export default async function RepoPage({ params }: PageProps) {
   const fullName = `${owner}/${repo}`;
   const installationId = await getInstallationId(owner);
   const repoInfo = await getRepoInfo(installationId, owner, repo);
-  const insights: RepoInsightsData = {
+  const insights: InsightsData = {
     views: getRepoViews(installationId, db, fullName, repoInfo.id),
     clones: getRepoClones(installationId, db, fullName, repoInfo.id),
     stars: getRepoStars(db, {
@@ -71,7 +71,7 @@ export default async function RepoPage({ params }: PageProps) {
       <div className="flex min-h-screen flex-col">
         <Navbar repoInfo={repoInfo} />
         <div className="container mx-auto space-y-6 p-4 sm:p-10">
-          <RepoInsights data={insights} />
+          <Insights data={insights} />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <ChartErrorBoundary name="referrers">
               <Suspense fallback={<ReferrersChart isLoading />}>

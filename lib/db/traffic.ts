@@ -237,6 +237,31 @@ export async function getForkHistoryForRepos(
   return groupByRepo(rows);
 }
 
+export async function getCounterTotals(
+  db: Db,
+  repoIds: number[],
+): Promise<CounterHistory[]> {
+  if (repoIds.length === 0) return [];
+  const rows = await queryChunks(repoIds, (ids) =>
+    db
+      .select({
+        date: repoCounters.date,
+        stars: sum(repoCounters.stars).mapWith(Number),
+        forks: sum(repoCounters.forks).mapWith(Number),
+        watchers: sum(repoCounters.watchers).mapWith(Number),
+      })
+      .from(repoCounters)
+      .where(inArray(repoCounters.repoId, ids))
+      .groupBy(repoCounters.date),
+  );
+  return mergeByDate(rows, (a, b) => ({
+    date: a.date,
+    stars: a.stars + b.stars,
+    forks: a.forks + b.forks,
+    watchers: a.watchers + b.watchers,
+  }));
+}
+
 export async function getCounterHistory(
   db: Db,
   repoId: number,

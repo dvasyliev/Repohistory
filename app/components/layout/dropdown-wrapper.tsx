@@ -11,8 +11,11 @@ import { signout } from "@/lib/actions/auth";
 export function DropdownWrapper() {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer">
+      <DropdownMenuTrigger
+        aria-label="Account menu"
+        className="cursor-pointer rounded-full"
+      >
+        <Avatar>
           <AvatarFallback>
             <User className="h-4 w-4" />
           </AvatarFallback>

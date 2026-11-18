@@ -10,6 +10,7 @@ vi.mock("@/lib/db/traffic", () => ({
   getForkHistoryForRepos,
   getDailyCountTotals,
   getCounterHistory,
+  getCounterTotals: vi.fn(),
 }));
 vi.mock("@/lib/repo/github-stats", () => ({ fetchCommitHistory }));
 vi.mock("@/lib/octokit/installation", () => ({
@@ -29,6 +30,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import {
+  getOwnerCommits,
   getOwnerForks,
   getRepoCommits,
   getRepoCounters,
@@ -124,5 +126,28 @@ describe("getRepoCommits", () => {
     fetchCommitHistory.mockResolvedValueOnce(weeks);
     await expect(getRepoCommits(1, "o", "c")).rejects.toThrow("down");
     expect(await getRepoCommits(1, "o", "c")).toEqual(weeks);
+  });
+});
+
+describe("getOwnerCommits", () => {
+  const repos = [{ name: "x" }, { name: "y" }] as Repo[];
+
+  it("adds up the repos' commits", async () => {
+    fetchCommitHistory.mockReset().mockResolvedValue({
+      days: [{ date: "2026-11-01", commits: 2 }],
+      weeks: [],
+    });
+    expect(await getOwnerCommits(1, "p", repos)).toEqual({
+      days: [{ date: "2026-11-01", commits: 4 }],
+      weeks: [],
+    });
+  });
+
+  it("gives null while GitHub still counts any repo", async () => {
+    fetchCommitHistory
+      .mockReset()
+      .mockResolvedValueOnce({ days: [], weeks: [] })
+      .mockResolvedValueOnce(null);
+    expect(await getOwnerCommits(1, "q", repos)).toBeNull();
   });
 });

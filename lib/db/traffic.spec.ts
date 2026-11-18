@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Db } from "./client";
-import { paths, referrers, stars, views } from "./schema";
+import { paths, referrers, repoCounters, stars, views } from "./schema";
 import { createTestDb } from "./test-db";
 import {
+  getCounterTotals,
   getDailyCountTotals,
   getDailyHistoryForRepos,
   getDailyTotals,
@@ -119,6 +120,22 @@ describe("getDailyCountTotals", () => {
     expect(await getDailyCountTotals(db, "stars", [1, 2])).toEqual([
       { date: "2026-11-01", count: 3 },
       { date: "2026-11-03", count: 6 },
+    ]);
+  });
+});
+
+describe("getCounterTotals", () => {
+  it("sums the repos' counters per day", async () => {
+    const db = createTestDb();
+    await db.insert(repoCounters).values([
+      { repoId: 1, date: "2026-11-02", stars: 1, forks: 2, watchers: 3 },
+      { repoId: 2, date: "2026-11-02", stars: 4, forks: 5, watchers: 6 },
+      { repoId: 2, date: "2026-11-01", stars: 1, forks: 1, watchers: 1 },
+      { repoId: 3, date: "2026-11-02", stars: 9, forks: 9, watchers: 9 },
+    ]);
+    expect(await getCounterTotals(db, [1, 2])).toEqual([
+      { date: "2026-11-01", stars: 1, forks: 1, watchers: 1 },
+      { date: "2026-11-02", stars: 5, forks: 7, watchers: 9 },
     ]);
   });
 });

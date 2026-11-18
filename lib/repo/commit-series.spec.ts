@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commitSeries } from "./commit-series";
+import { commitSeries, sumCommitHistories } from "./commit-series";
 
 const days = [
   { date: "2025-11-20", commits: 0 },
@@ -29,5 +29,37 @@ describe("commitSeries", () => {
 
   it("gives nothing without history", () => {
     expect(commitSeries(null, true)).toEqual([]);
+  });
+});
+
+describe("sumCommitHistories", () => {
+  it("adds the repos' commits per day and per week", () => {
+    expect(
+      sumCommitHistories([
+        {
+          days: [
+            { date: "2026-11-01", commits: 1 },
+            { date: "2026-11-02", commits: 2 },
+          ],
+          weeks: [{ date: "2026-10-26", commits: 3 }],
+        },
+        {
+          days: [{ date: "2026-11-02", commits: 5 }],
+          weeks: [
+            { date: "2025-01-05", commits: 4 },
+            { date: "2026-10-26", commits: 5 },
+          ],
+        },
+      ]),
+    ).toEqual({
+      days: [
+        { date: "2026-11-01", commits: 1 },
+        { date: "2026-11-02", commits: 7 },
+      ],
+      weeks: [
+        { date: "2025-01-05", commits: 4 },
+        { date: "2026-10-26", commits: 8 },
+      ],
+    });
   });
 });
