@@ -102,7 +102,6 @@ describe("updateTraffic", () => {
         stars: 5,
         forks: 2,
         watchers: 3,
-        openIssues: 1,
       },
     ]);
   });

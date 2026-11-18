@@ -1,0 +1,1 @@
+ALTER TABLE `repo_counters` DROP COLUMN `open_issues`;

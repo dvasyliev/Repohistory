@@ -69,7 +69,6 @@ export const repoCounters = sqliteTable(
     stars: integer("stars").notNull(),
     forks: integer("forks").notNull(),
     watchers: integer("watchers").notNull(),
-    openIssues: integer("open_issues").notNull(),
   },
   (t) => [primaryKey({ columns: [t.repoId, t.date] })],
 );

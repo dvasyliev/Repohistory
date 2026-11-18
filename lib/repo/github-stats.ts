@@ -93,6 +93,5 @@ export async function fetchCounters(
     stars: data.stargazers_count,
     forks: data.forks_count,
     watchers: data.subscribers_count,
-    openIssues: data.open_issues_count,
   };
 }

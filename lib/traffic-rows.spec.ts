@@ -325,10 +325,9 @@ describe("upsertTraffic", () => {
         stars: 1,
         forks: 1,
         watchers: 1,
-        openIssues: 1,
       })),
     });
-    expect(batches[0].map((s) => s.params.length / 6)).toEqual([16, 1]);
+    expect(batches[0].map((s) => s.params.length / 5)).toEqual([16, 1]);
     expect(batches[0][0].sql).toContain("on conflict");
     expect(batches[0].every((s) => s.params.length <= 100)).toBe(true);
   });

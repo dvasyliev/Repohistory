@@ -124,7 +124,6 @@ export type CounterHistory = {
   stars: number;
   forks: number;
   watchers: number;
-  openIssues: number;
 };
 export type CommitWeek = {
   week: string;
@@ -157,12 +156,11 @@ export async function getCounterHistory(
     .from(repoCounters)
     .where(eq(repoCounters.repoId, repoId))
     .orderBy(asc(repoCounters.date));
-  return rows.map(({ date, stars, forks, watchers, openIssues }) => ({
+  return rows.map(({ date, stars, forks, watchers }) => ({
     date,
     stars,
     forks,
     watchers,
-    openIssues,
   }));
 }
 

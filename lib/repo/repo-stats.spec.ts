@@ -99,7 +99,7 @@ describe("getOwnerForks", () => {
 describe("getRepoCounters and getRepoCommitWeeks", () => {
   it("pass rows through", async () => {
     getCounterHistory.mockResolvedValue([
-      { date: "2026-11-01", stars: 1, forks: 2, watchers: 3, openIssues: 4 },
+      { date: "2026-11-01", stars: 1, forks: 2, watchers: 3 },
     ]);
     getCommitWeeks.mockResolvedValue([
       { week: "2026-11-01", commits: 1, additions: 2, deletions: 3 },

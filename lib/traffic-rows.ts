@@ -235,7 +235,6 @@ export async function upsertTraffic(
             stars: sql`excluded.stars`,
             forks: sql`excluded.forks`,
             watchers: sql`excluded.watchers`,
-            openIssues: sql`excluded.open_issues`,
           },
         }),
     ),

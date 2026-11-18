@@ -24,7 +24,6 @@ const chartConfig = {
   stars: { label: "Stars", color: "#62C3F8" },
   forks: { label: "Forks", color: "#315c72" },
   watchers: { label: "Watchers", color: "#f5a623" },
-  openIssues: { label: "Open issues", color: "#e5484d" },
 } satisfies ChartConfig;
 
 const EMPTY: CounterHistory[] = [];
