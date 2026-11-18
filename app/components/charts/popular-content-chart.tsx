@@ -13,6 +13,7 @@ import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 
 interface PopularContentChartProps {
   traffic?: {
@@ -98,7 +99,9 @@ export function PopularContentChart({
     });
   }, [data, dateRange]);
 
-  const showHint = filteredData.length === 1;
+  const series = Object.keys(chartConfig);
+  const hasAnyData = hasNonZero(data, series);
+  const showChart = hasNonZero(filteredData, series);
 
   return (
     <Card className="w-full">
@@ -109,14 +112,9 @@ export function PopularContentChart({
             Most visited pages in your repo (14d avg)
           </CardDescription>
         </div>
-        {showHint && (
-          <div className="hidden text-sm text-muted-foreground md:block">
-            💡 Come back in a few days to see trends over time
-          </div>
-        )}
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || filteredData.length > 0 ? (
+        {isLoading || (showChart && filteredData.length > 1) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
@@ -137,7 +135,15 @@ export function PopularContentChart({
             ))}
           </Chart>
         ) : (
-          <NoDataMessage dataType="content data" />
+          <NoDataMessage
+            dataType="popular content"
+            hasAnyData={hasAnyData}
+            message={
+              showChart
+                ? "Come back in a few days to see trends over time"
+                : undefined
+            }
+          />
         )}
       </CardContent>
     </Card>

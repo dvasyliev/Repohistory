@@ -13,6 +13,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 import { useDateFiltered } from "./use-date-filtered";
 import { ViewTypeTabs, type ViewType } from "./view-type-tabs";
 import { toCumulativeDays, type DailyCount } from "@/lib/repo/cumulative";
@@ -75,7 +76,7 @@ export function ForksChart({
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || filteredData.length > 0 ? (
+        {isLoading || hasNonZero(filteredData, ["forks"]) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
@@ -92,9 +93,12 @@ export function ForksChart({
             />
           </Chart>
         ) : (
-          <NoDataMessage dataType="forks" />
+          <NoDataMessage
+            dataType="forks"
+            hasAnyData={hasNonZero(data, ["forks"])}
+          />
         )}
-        {(isLoading || filteredData.length > 0) && (
+        {(isLoading || data.length > 0) && (
           <ViewTypeTabs
             value={viewType}
             onChange={setViewType}

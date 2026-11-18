@@ -17,6 +17,7 @@ import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { TrendIndicator } from "./trend-indicator";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 import { ChartCustomTooltip } from "./chart-custom-tooltip";
 interface CloneChartProps {
   traffic?: {
@@ -44,6 +45,8 @@ const chartConfig = {
     color: "#315c72",
   },
 } satisfies ChartConfig;
+
+const SERIES = ["total", "unique"] as const;
 
 export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
   const { dateRange } = useDateRange();
@@ -127,7 +130,7 @@ export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || filteredData.length > 0 ? (
+        {isLoading || hasNonZero(filteredData, SERIES) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
@@ -245,7 +248,10 @@ export function CloneChart({ traffic, isLoading = false }: CloneChartProps) {
             />
           </Chart>
         ) : (
-          <NoDataMessage dataType="clones" />
+          <NoDataMessage
+            dataType="clones"
+            hasAnyData={hasNonZero(data, SERIES)}
+          />
         )}
       </CardContent>
     </Card>

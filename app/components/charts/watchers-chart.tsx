@@ -11,6 +11,7 @@ import {
 import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 import { useDateFiltered } from "./use-date-filtered";
 import type { CounterHistory } from "@/lib/db/traffic";
 
@@ -42,7 +43,7 @@ export function WatchersChart({
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || filteredData.length > 0 ? (
+        {isLoading || hasNonZero(filteredData, ["watchers"]) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
@@ -58,7 +59,10 @@ export function WatchersChart({
             />
           </Chart>
         ) : (
-          <NoDataMessage dataType="watchers" />
+          <NoDataMessage
+            dataType="watchers"
+            hasAnyData={hasNonZero(counters, ["watchers"])}
+          />
         )}
       </CardContent>
     </Card>

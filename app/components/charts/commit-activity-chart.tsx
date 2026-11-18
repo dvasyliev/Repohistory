@@ -13,6 +13,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 import { useDateFiltered } from "./use-date-filtered";
 import type { CommitWeek } from "@/lib/repo/github-stats";
 
@@ -66,7 +67,7 @@ export function CommitActivityChart({
           <div className="flex h-64 items-center justify-center text-muted-foreground">
             GitHub is still counting commits. Reload in a minute.
           </div>
-        ) : isLoading || filteredData.length > 0 ? (
+        ) : isLoading || hasNonZero(filteredData, ["commits"]) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={commitsConfig}
@@ -80,7 +81,10 @@ export function CommitActivityChart({
             />
           </Chart>
         ) : (
-          <NoDataMessage dataType="commit activity" />
+          <NoDataMessage
+            dataType="commits"
+            hasAnyData={hasNonZero(data, ["commits"])}
+          />
         )}
       </CardContent>
     </Card>

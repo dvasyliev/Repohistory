@@ -19,6 +19,7 @@ import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { TrendIndicator } from "./trend-indicator";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
+import { hasNonZero } from "@/lib/chart-empty";
 import { ChartCustomTooltip } from "./chart-custom-tooltip";
 import { ViewTypeTabs, type ViewType } from "./view-type-tabs";
 
@@ -141,7 +142,7 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || filteredData.length > 0 ? (
+        {isLoading || hasNonZero(filteredData, ["stars"]) ? (
           <Chart
             data={
               isLoading
@@ -232,9 +233,12 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
             />
           </Chart>
         ) : (
-          <NoDataMessage dataType="stars" />
+          <NoDataMessage
+            dataType="stars"
+            hasAnyData={hasNonZero(data, ["stars"])}
+          />
         )}
-        {(isLoading || filteredData.length > 0) && !isOver40kStars && (
+        {(isLoading || data.length > 0) && !isOver40kStars && (
           <ViewTypeTabs
             value={viewType}
             onChange={setViewType}

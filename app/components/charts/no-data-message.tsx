@@ -1,25 +1,24 @@
 "use client";
 
+import { emptyChartMessage } from "@/lib/chart-empty";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 
 interface NoDataMessageProps {
   dataType: string;
+  hasAnyData: boolean;
+  message?: string;
 }
 
-export function NoDataMessage({ dataType }: NoDataMessageProps) {
+export function NoDataMessage({
+  dataType,
+  hasAnyData,
+  message,
+}: NoDataMessageProps) {
   const { selectedPeriod } = useDateRange();
 
-  const getMessage = () => {
-    if (selectedPeriod === "all") {
-      return `No ${dataType} available`;
-    }
-
-    return `No ${dataType} over the past ${selectedPeriod} days`;
-  };
-
   return (
-    <div className="flex h-64 items-center justify-center text-muted-foreground">
-      {getMessage()}
+    <div className="flex h-64 items-center justify-center px-4 text-center text-muted-foreground">
+      {message ?? emptyChartMessage(dataType, hasAnyData, selectedPeriod)}
     </div>
   );
 }
