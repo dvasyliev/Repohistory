@@ -18,6 +18,7 @@ import {
   type ChartId,
 } from "@/app/[owner]/[repo]/_lib/chart-param";
 import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
+import { commitSeries } from "@/lib/repo/commit-series";
 import { MetricTile } from "./metric-tile";
 import { ChartSkeleton } from "./chart-skeleton";
 
@@ -195,12 +196,10 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
           data={data.commits}
           summarize={(history, range) =>
             sumInRange(
-              ((range.from ? history?.days : history?.weeks) ?? []).map(
-                ({ date, commits }) => ({
-                  date,
-                  value: commits,
-                }),
-              ),
+              commitSeries(history, !range.from).map(({ date, commits }) => ({
+                date,
+                value: commits,
+              })),
               range,
             )
           }

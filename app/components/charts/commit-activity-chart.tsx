@@ -16,7 +16,8 @@ import { NoDataMessage } from "./no-data-message";
 import { hasNonZero } from "@/lib/chart-empty";
 import { useDateFiltered } from "./use-date-filtered";
 import { useDateRange } from "@/lib/contexts/date-range-context";
-import type { CommitDay, CommitHistory } from "@/lib/repo/github-stats";
+import { commitSeries } from "@/lib/repo/commit-series";
+import type { CommitHistory } from "@/lib/repo/github-stats";
 
 interface CommitActivityChartProps {
   history?: CommitHistory | null;
@@ -27,15 +28,16 @@ const commitsConfig = {
   commits: { label: "Commits", color: "#62C3F8" },
 } satisfies ChartConfig;
 
-const EMPTY: CommitDay[] = [];
-
 export function CommitActivityChart({
   history,
   isLoading = false,
 }: CommitActivityChartProps) {
   const { selectedPeriod } = useDateRange();
-  const weekly = selectedPeriod === "all";
-  const data = (weekly ? history?.weeks : history?.days) ?? EMPTY;
+  const data = useMemo(
+    () => commitSeries(history, selectedPeriod === "all"),
+    [history, selectedPeriod],
+  );
+  const weekly = data.length > 0 && data === history?.weeks;
   const filteredData = useDateFiltered(data);
   const totalCommits = useMemo(
     () => filteredData.reduce((sum, item) => sum + item.commits, 0),
