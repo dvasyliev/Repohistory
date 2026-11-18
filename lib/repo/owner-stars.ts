@@ -10,22 +10,17 @@ export const getOwnerStars = cache(
       (sum, repo) => sum + repo.stargazers_count,
       0,
     );
-    try {
-      const totals = await getDailyCountTotals(
-        db,
-        "stars",
-        repos.map((repo) => repo.id),
-      );
-      return {
-        totalStars,
-        hasEstimatedData: false,
-        starsHistory: toCumulativeDays(
-          Object.fromEntries(totals.map(({ date, count }) => [date, count])),
-        ),
-      };
-    } catch (error) {
-      console.error("Error fetching stars history from D1:", error);
-      return { totalStars, hasEstimatedData: false, starsHistory: [] };
-    }
+    const totals = await getDailyCountTotals(
+      db,
+      "stars",
+      repos.map((repo) => repo.id),
+    );
+    return {
+      totalStars,
+      hasEstimatedData: false,
+      starsHistory: toCumulativeDays(
+        Object.fromEntries(totals.map(({ date, count }) => [date, count])),
+      ),
+    };
   },
 );

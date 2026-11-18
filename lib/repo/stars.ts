@@ -92,48 +92,28 @@ function toCumulativeWeeks(weeks: StarWeek[]) {
     });
 }
 
-const emptyStars = (): RepoStarsData => ({
-  totalStars: 0,
-  hasEstimatedData: false,
-  starsHistory: [],
-});
-
 export async function getRepoStars(
   db: Db,
   repo: { id: number; fullName: string; stargazersCount: number },
   stored?: StarHistory[],
 ): Promise<RepoStarsData> {
-  try {
-    const rows = stored ?? (await getStarHistory(db, repo.id));
-    const daily = Object.fromEntries(rows.map((r) => [r.date, r.count]));
-    return {
-      totalStars: repo.stargazersCount,
-      hasEstimatedData: false,
-      starsHistory: toCumulativeDays(daily),
-    };
-  } catch (error) {
-    console.error("Error fetching stars from D1:", error);
-    return {
-      totalStars: repo.stargazersCount,
-      hasEstimatedData: false,
-      starsHistory: [],
-    };
-  }
+  const rows = stored ?? (await getStarHistory(db, repo.id));
+  const daily = Object.fromEntries(rows.map((r) => [r.date, r.count]));
+  return {
+    totalStars: repo.stargazersCount,
+    hasEstimatedData: false,
+    starsHistory: toCumulativeDays(daily),
+  };
 }
 
 export async function getRepoStarsChart(
   octokit: Octokit,
   repo: { fullName: string; stargazersCount: number },
 ): Promise<RepoStarsData> {
-  try {
-    const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
-    return {
-      totalStars: repo.stargazersCount,
-      hasEstimatedData: false,
-      starsHistory: toCumulativeWeeks(weeks),
-    };
-  } catch (error) {
-    console.error("Error fetching stars data:", error);
-    return emptyStars();
-  }
+  const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
+  return {
+    totalStars: repo.stargazersCount,
+    hasEstimatedData: false,
+    starsHistory: toCumulativeWeeks(weeks),
+  };
 }

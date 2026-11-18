@@ -64,7 +64,10 @@ export async function GET(request: NextRequest) {
 
     const avatarUrl = repoInfo.owner.avatar_url;
     const logoUrl = avatarUrl
-      ? await getBase64Image(`${avatarUrl}&size=22`)
+      ? await getBase64Image(`${avatarUrl}&size=22`).catch((error) => {
+          console.error("Avatar fetch failed, drawing without it:", error);
+          return "";
+        })
       : "";
 
     const repoData = {

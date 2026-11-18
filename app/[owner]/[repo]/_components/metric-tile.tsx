@@ -2,6 +2,7 @@
 
 import { Suspense, use } from "react";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { TrendIndicator } from "@/app/components/charts/trend-indicator";
 import {
   useDateRange,
@@ -36,9 +37,11 @@ export function MetricTile<T>({
       )}
     >
       <span className="text-sm text-muted-foreground">{label}</span>
-      <Suspense fallback={<Skeleton className="h-7 w-16" />}>
-        <TileValue data={data} summarize={summarize} />
-      </Suspense>
+      <ChartErrorBoundary name={label.toLowerCase()} compact resetKey={data}>
+        <Suspense fallback={<Skeleton className="h-7 w-16" />}>
+          <TileValue data={data} summarize={summarize} />
+        </Suspense>
+      </ChartErrorBoundary>
     </button>
   );
 }

@@ -2,6 +2,11 @@ import { cache } from "react";
 import { App, Octokit } from "octokit";
 import { timedFetch } from "./timed-fetch";
 
+const CRON_TIMEOUT_MS = 10_000;
+
+const cronFetch = (input: RequestInfo | URL, init?: RequestInit) =>
+  timedFetch(input, init, CRON_TIMEOUT_MS);
+
 const RETRY_ONCE = (
   _retryAfter: number,
   _options: unknown,
@@ -15,7 +20,8 @@ export function createApp({ throttle }: { throttle: boolean }): App {
     // Env files keep the PEM key on one line with escaped newlines.
     privateKey: process.env.APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
     Octokit: Octokit.defaults({
-      request: { fetch: timedFetch },
+      request: { fetch: throttle ? cronFetch : timedFetch },
+      retry: { enabled: false },
       throttle: throttle
         ? { onRateLimit: RETRY_ONCE, onSecondaryRateLimit: RETRY_ONCE }
         : { enabled: false },

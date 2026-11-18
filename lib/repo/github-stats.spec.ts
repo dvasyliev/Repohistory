@@ -22,27 +22,21 @@ describe("fetchCommitWeeks", () => {
   const week = Date.UTC(2026, 10, 1) / 1000;
   const activity = [{ week, total: 2 }];
 
-  it("retries once after a 202 and returns commits by week", async () => {
+  it("returns commits by week", async () => {
     const { octokit } = fakeOctokit({
-      [activityRoute]: [
-        { status: 202, data: {} },
-        { status: 200, data: activity },
-      ],
+      [activityRoute]: [{ status: 200, data: activity }],
     });
-    const sleep = vi.fn(() => Promise.resolve());
-    expect(await fetchCommitWeeks(octokit, "o", "r", sleep)).toEqual([
+    expect(await fetchCommitWeeks(octokit, "o", "r")).toEqual([
       { week: "2026-11-01", commits: 2 },
     ]);
-    expect(sleep).toHaveBeenCalledWith(3000);
   });
 
-  it("returns null when still 202 after the retry", async () => {
+  it("returns null at once on a 202, with one call", async () => {
     const { octokit, request } = fakeOctokit({
       [activityRoute]: [{ status: 202, data: {} }],
     });
-    const sleep = vi.fn(() => Promise.resolve());
-    expect(await fetchCommitWeeks(octokit, "o", "r", sleep)).toBeNull();
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(await fetchCommitWeeks(octokit, "o", "r")).toBeNull();
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it("returns null when a 200 body is not an array", async () => {

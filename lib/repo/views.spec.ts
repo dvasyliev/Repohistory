@@ -30,7 +30,9 @@ function daysAgo(n: number) {
 }
 
 describe("getRepoViews", () => {
-  beforeEach(() => getDailyHistory.mockReset());
+  beforeEach(() => {
+    getDailyHistory.mockReset();
+  });
 
   it("includes stored days older than GitHub's window", async () => {
     const old = daysAgo(40);
@@ -52,6 +54,29 @@ describe("getRepoViews", () => {
       count: 9,
       uniques: 4,
     });
+  });
+
+  it("throws when GitHub fails", async () => {
+    getDailyHistory.mockResolvedValue([]);
+    getViews.mockRejectedValue(new Error("github down"));
+    await expect(getRepoViews(1, db, "o/r", 1)).rejects.toThrow("github down");
+  });
+
+  it("throws when D1 fails", async () => {
+    getDailyHistory.mockRejectedValue(new Error("d1 down"));
+    await expect(getRepoViews(githubViews([]), db, "o/r", 1)).rejects.toThrow(
+      "d1 down",
+    );
+  });
+
+  it("skips GitHub without an installation", async () => {
+    getViews.mockReset();
+    expect(
+      await getRepoViews(null, db, "", 0, [
+        { date: daysAgo(1), total: 2, unique: 1 },
+      ]),
+    ).toMatchObject({ count: 2, uniques: 1 });
+    expect(getViews).not.toHaveBeenCalled();
   });
 
   it("returns empty views when there is no history and no traffic", async () => {

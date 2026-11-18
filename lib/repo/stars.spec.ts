@@ -71,13 +71,9 @@ describe("getRepoStars", () => {
     expect(result).toMatchObject({ totalStars: 5, starsHistory: [] });
   });
 
-  it("keeps the live total and logs when the D1 read fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("throws when the D1 read fails", async () => {
     getStarHistory.mockReturnValue(Promise.reject(new Error("d1 down")));
-    const result = await getRepoStars(db, repo);
-    expect(result).toMatchObject({ totalStars: 3, starsHistory: [] });
-    expect(error).toHaveBeenCalled();
-    error.mockRestore();
+    await expect(getRepoStars(db, repo)).rejects.toThrow("d1 down");
   });
 });
 

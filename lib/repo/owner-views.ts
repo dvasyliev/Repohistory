@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Repo } from "@/lib/types";
 import { getRepoViews } from "./views";
 import type { Db } from "@/lib/db/client";
-import { getDailyTotals, type DailyHistory } from "@/lib/db/traffic";
+import { getDailyTotals } from "@/lib/db/traffic";
 
 export const getOwnerViews = cache(
   async (
@@ -13,16 +13,11 @@ export const getOwnerViews = cache(
     uniques: number;
     views: Array<{ timestamp: string; count: number; uniques: number }>;
   }> => {
-    let totals: DailyHistory[] = [];
-    try {
-      totals = await getDailyTotals(
-        db,
-        "views",
-        repos.map((repo) => repo.id),
-      );
-    } catch (error) {
-      console.error("Error fetching views history from D1:", error);
-    }
+    const totals = await getDailyTotals(
+      db,
+      "views",
+      repos.map((repo) => repo.id),
+    );
     return getRepoViews(null, db, "", 0, totals);
   },
 );

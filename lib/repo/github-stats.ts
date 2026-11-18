@@ -6,10 +6,6 @@ export type CommitWeek = { week: string; commits: number };
 
 const FORKS_PER_PAGE = 100;
 const MAX_FORK_PAGES = 30;
-const RETRY_DELAY_MS = 3000;
-
-const wait = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function fetchForkDates(
   octokit: Octokit,
@@ -36,17 +32,12 @@ async function fetchStat<T>(
   route: string,
   owner: string,
   repo: string,
-  sleep: (ms: number) => Promise<void>,
 ): Promise<T[] | null> {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const { status, data } = (await octokit.request(route, {
-      owner,
-      repo,
-    })) as { status: number; data: unknown };
-    if (status !== 202) return Array.isArray(data) ? (data as T[]) : null;
-    if (attempt === 0) await sleep(RETRY_DELAY_MS);
-  }
-  return null;
+  const { status, data } = (await octokit.request(route, {
+    owner,
+    repo,
+  })) as { status: number; data: unknown };
+  return status !== 202 && Array.isArray(data) ? (data as T[]) : null;
 }
 
 const weekDate = (week: number) =>
@@ -56,14 +47,12 @@ export async function fetchCommitWeeks(
   octokit: Octokit,
   owner: string,
   repo: string,
-  sleep: (ms: number) => Promise<void> = wait,
 ): Promise<CommitWeek[] | null> {
   const activity = await fetchStat<CommitActivity>(
     octokit,
     "GET /repos/{owner}/{repo}/stats/commit_activity",
     owner,
     repo,
-    sleep,
   );
   return (
     activity?.map(({ week, total }) => ({

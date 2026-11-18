@@ -23,44 +23,29 @@ function toForkDays(daily: Record<string, number>): ForkDay[] {
 }
 
 export async function getRepoForks(db: Db, repoId: number): Promise<ForkDay[]> {
-  try {
-    const byRepo = await getForkHistoryForRepos(db, [repoId]);
-    const rows = byRepo.get(repoId) ?? [];
-    return toForkDays(Object.fromEntries(rows.map((r) => [r.date, r.count])));
-  } catch (error) {
-    console.error("Error fetching forks from D1:", error);
-    return [];
-  }
+  const byRepo = await getForkHistoryForRepos(db, [repoId]);
+  const rows = byRepo.get(repoId) ?? [];
+  return toForkDays(Object.fromEntries(rows.map((r) => [r.date, r.count])));
 }
 
 export const getOwnerForks = cache(
   async (db: Db, repos: Repo[]): Promise<ForkDay[]> => {
-    try {
-      const totals = await getDailyCountTotals(
-        db,
-        "forks",
-        repos.map((repo) => repo.id),
-      );
-      return toForkDays(
-        Object.fromEntries(totals.map(({ date, count }) => [date, count])),
-      );
-    } catch (error) {
-      console.error("Error fetching forks from D1:", error);
-      return [];
-    }
+    const totals = await getDailyCountTotals(
+      db,
+      "forks",
+      repos.map((repo) => repo.id),
+    );
+    return toForkDays(
+      Object.fromEntries(totals.map(({ date, count }) => [date, count])),
+    );
   },
 );
 
-export async function getRepoCounters(
+export function getRepoCounters(
   db: Db,
   repoId: number,
 ): Promise<CounterHistory[]> {
-  try {
-    return await getCounterHistory(db, repoId);
-  } catch (error) {
-    console.error("Error fetching counters from D1:", error);
-    return [];
-  }
+  return getCounterHistory(db, repoId);
 }
 
 class StillCountingError extends Error {}
@@ -84,7 +69,6 @@ export async function getRepoCommitWeeks(
     return await fetchCachedCommitWeeks(installationId, owner, repo);
   } catch (error) {
     if (error instanceof StillCountingError) return null;
-    console.error("Error fetching commit activity from GitHub:", error);
-    return [];
+    throw error;
   }
 }

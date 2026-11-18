@@ -67,12 +67,9 @@ describe("getRepoForks", () => {
     expect(await getRepoForks(db, 1)).toEqual([]);
   });
 
-  it("gives an empty series and logs when the D1 read fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("throws when the D1 read fails", async () => {
     getForkHistoryForRepos.mockReturnValue(Promise.reject(new Error("down")));
-    expect(await getRepoForks(db, 1)).toEqual([]);
-    expect(error).toHaveBeenCalled();
-    error.mockRestore();
+    await expect(getRepoForks(db, 1)).rejects.toThrow("down");
   });
 });
 
@@ -93,12 +90,11 @@ describe("getOwnerForks", () => {
     });
   });
 
-  it("gives an empty series and logs when the D1 read fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("throws when the D1 read fails", async () => {
     getDailyCountTotals.mockReturnValue(Promise.reject(new Error("down")));
-    expect(await getOwnerForks(db, [{ id: 1 }] as Repo[])).toEqual([]);
-    expect(error).toHaveBeenCalled();
-    error.mockRestore();
+    await expect(getOwnerForks(db, [{ id: 1 }] as Repo[])).rejects.toThrow(
+      "down",
+    );
   });
 });
 
@@ -110,12 +106,9 @@ describe("getRepoCounters", () => {
     expect(await getRepoCounters(db, 1)).toHaveLength(1);
   });
 
-  it("gives an empty list and logs when D1 fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("throws when D1 fails", async () => {
     getCounterHistory.mockReturnValue(Promise.reject(new Error("down")));
-    expect(await getRepoCounters(db, 1)).toEqual([]);
-    expect(error).toHaveBeenCalledTimes(1);
-    error.mockRestore();
+    await expect(getRepoCounters(db, 1)).rejects.toThrow("down");
   });
 });
 
@@ -136,11 +129,11 @@ describe("getRepoCommitWeeks", () => {
     expect(await getRepoCommitWeeks(1, "o", "b")).toEqual(weeks);
   });
 
-  it("gives an empty list and logs when GitHub fails", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    fetchCommitWeeks.mockReset().mockRejectedValue(new Error("down"));
-    expect(await getRepoCommitWeeks(1, "o", "c")).toEqual([]);
-    expect(error).toHaveBeenCalledTimes(1);
-    error.mockRestore();
+  it("throws and asks again next time when GitHub fails", async () => {
+    const weeks = [{ week: "2026-11-01", commits: 3 }];
+    fetchCommitWeeks.mockReset().mockRejectedValueOnce(new Error("down"));
+    fetchCommitWeeks.mockResolvedValueOnce(weeks);
+    await expect(getRepoCommitWeeks(1, "o", "c")).rejects.toThrow("down");
+    expect(await getRepoCommitWeeks(1, "o", "c")).toEqual(weeks);
   });
 });

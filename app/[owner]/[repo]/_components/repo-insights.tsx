@@ -22,6 +22,7 @@ import {
   chartParser,
   type ChartId,
 } from "@/app/[owner]/[repo]/_lib/chart-param";
+import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { MetricTile } from "./metric-tile";
 
 type Traffic = { timestamp: string; count: number; uniques: number };
@@ -60,6 +61,26 @@ function Resolved<T>({
   return children(use(data));
 }
 
+function ChartSlot<T>({
+  name,
+  data,
+  loading,
+  children,
+}: {
+  name: string;
+  data: Promise<T>;
+  loading: ReactNode;
+  children: (value: T) => ReactNode;
+}) {
+  return (
+    <ChartErrorBoundary name={name} resetKey={data}>
+      <Suspense fallback={loading}>
+        <Resolved data={data}>{children}</Resolved>
+      </Suspense>
+    </ChartErrorBoundary>
+  );
+}
+
 function SelectedChart({
   chart,
   data,
@@ -70,51 +91,63 @@ function SelectedChart({
   switch (chart) {
     case "views":
       return (
-        <Suspense fallback={<ViewChart isLoading />}>
-          <Resolved data={data.views}>
-            {(views) => <ViewChart traffic={{ views }} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="views"
+          data={data.views}
+          loading={<ViewChart isLoading />}
+        >
+          {(views) => <ViewChart traffic={{ views }} />}
+        </ChartSlot>
       );
     case "clones":
       return (
-        <Suspense fallback={<CloneChart isLoading />}>
-          <Resolved data={data.clones}>
-            {(clones) => <CloneChart traffic={{ clones }} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="clones"
+          data={data.clones}
+          loading={<CloneChart isLoading />}
+        >
+          {(clones) => <CloneChart traffic={{ clones }} />}
+        </ChartSlot>
       );
     case "stars":
       return (
-        <Suspense fallback={<StarsChart isLoading />}>
-          <Resolved data={data.stars}>
-            {(stars) => <StarsChart starsData={stars} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="stars"
+          data={data.stars}
+          loading={<StarsChart isLoading />}
+        >
+          {(stars) => <StarsChart starsData={stars} />}
+        </ChartSlot>
       );
     case "forks":
       return (
-        <Suspense fallback={<ForksChart isLoading />}>
-          <Resolved data={data.forks}>
-            {(forks) => <ForksChart forksData={forks} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="forks"
+          data={data.forks}
+          loading={<ForksChart isLoading />}
+        >
+          {(forks) => <ForksChart forksData={forks} />}
+        </ChartSlot>
       );
     case "commits":
       return (
-        <Suspense fallback={<CommitActivityChart isLoading />}>
-          <Resolved data={data.commits}>
-            {(weeks) => <CommitActivityChart weeks={weeks} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="commits"
+          data={data.commits}
+          loading={<CommitActivityChart isLoading />}
+        >
+          {(weeks) => <CommitActivityChart weeks={weeks} />}
+        </ChartSlot>
       );
     case "watchers":
       return (
-        <Suspense fallback={<WatchersChart isLoading />}>
-          <Resolved data={data.counters}>
-            {(counters) => <WatchersChart counters={counters} />}
-          </Resolved>
-        </Suspense>
+        <ChartSlot
+          name="watchers"
+          data={data.counters}
+          loading={<WatchersChart isLoading />}
+        >
+          {(counters) => <WatchersChart counters={counters} />}
+        </ChartSlot>
       );
   }
 }

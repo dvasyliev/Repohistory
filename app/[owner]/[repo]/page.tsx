@@ -6,6 +6,7 @@ import {
   PopularContentChartWrapper,
 } from "@/app/components/charts/chart-wrappers";
 import { Navbar } from "@/app/components/layout/navbar";
+import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { getRepoInfo } from "@/lib/repo/info";
 import { getInstallationId } from "@/lib/octokit/installation";
 import { getDb } from "@/lib/db/client";
@@ -72,20 +73,24 @@ export default async function RepoPage({ params }: PageProps) {
         <div className="container mx-auto space-y-6 p-4 sm:p-10">
           <RepoInsights data={insights} />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Suspense fallback={<ReferrersChart isLoading />}>
-              <ReferrersChartWrapper
-                fullName={fullName}
-                repoId={repoInfo.id}
-                db={db}
-              />
-            </Suspense>
-            <Suspense fallback={<PopularContentChart isLoading />}>
-              <PopularContentChartWrapper
-                fullName={fullName}
-                repoId={repoInfo.id}
-                db={db}
-              />
-            </Suspense>
+            <ChartErrorBoundary name="referrers">
+              <Suspense fallback={<ReferrersChart isLoading />}>
+                <ReferrersChartWrapper
+                  fullName={fullName}
+                  repoId={repoInfo.id}
+                  db={db}
+                />
+              </Suspense>
+            </ChartErrorBoundary>
+            <ChartErrorBoundary name="popular content">
+              <Suspense fallback={<PopularContentChart isLoading />}>
+                <PopularContentChartWrapper
+                  fullName={fullName}
+                  repoId={repoInfo.id}
+                  db={db}
+                />
+              </Suspense>
+            </ChartErrorBoundary>
           </div>
         </div>
       </div>

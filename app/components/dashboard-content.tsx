@@ -8,17 +8,6 @@ import { getRepos } from "@/lib/octokit/get-repos";
 
 const VIEW_WINDOW_DAYS = 14;
 
-async function getRecentViews(
-  repoIds: number[],
-): Promise<Map<number, DailyHistory[]>> {
-  try {
-    return await getRecentViewsForRepos(getDb(), repoIds, cardViewsSince());
-  } catch (error) {
-    console.error("Failed to load recent views", error);
-    return new Map();
-  }
-}
-
 function sumViews14(recentViews: Map<number, DailyHistory[]>) {
   const since = new Date(Date.now() - (VIEW_WINDOW_DAYS - 1) * 86_400_000)
     .toISOString()
@@ -35,7 +24,11 @@ function sumViews14(recentViews: Map<number, DailyHistory[]>) {
 
 export default async function DashboardContent() {
   const { repos, reposByOwner } = await getRepos();
-  const recentViews = await getRecentViews(repos.map((repo) => repo.id));
+  const recentViews = await getRecentViewsForRepos(
+    getDb(),
+    repos.map((repo) => repo.id),
+    cardViewsSince(),
+  );
 
   return (
     <DashboardViews

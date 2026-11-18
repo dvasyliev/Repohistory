@@ -25,8 +25,15 @@ export const getChartWidthWithSize = (size: string) => {
   }
 };
 
+const AVATAR_TIMEOUT_MS = 3000;
+
 export async function getBase64Image(url: string): Promise<string> {
-  const imageUrlData = await fetch(url);
+  const imageUrlData = await fetch(url, {
+    signal: AbortSignal.timeout(AVATAR_TIMEOUT_MS),
+  });
+  if (!imageUrlData.ok) {
+    throw new Error(`Avatar request failed with ${imageUrlData.status}`);
+  }
   const buffer = await imageUrlData.arrayBuffer();
   const stringifiedBuffer = Buffer.from(buffer).toString("base64");
   const contentType = imageUrlData.headers.get("content-type");
