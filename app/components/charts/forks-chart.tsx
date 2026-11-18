@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Area } from "recharts";
 import {
   Card,
@@ -14,6 +14,7 @@ import type { ChartConfig } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
 import { useDateFiltered } from "./use-date-filtered";
+import { ViewTypeTabs, type ViewType } from "./view-type-tabs";
 import type { ForkDay } from "@/lib/repo/repo-stats";
 
 interface ForksChartProps {
@@ -32,18 +33,22 @@ const chartConfig = {
 export function ForksChart({
   forksData,
   isLoading = false,
-  description = "Repo fork growth, cumulative",
+  description = "Repo fork growth",
 }: ForksChartProps) {
+  const [viewType, setViewType] = useState<ViewType>("cumulative");
+  const isCumulative = viewType === "cumulative";
   const data = useMemo(
     () =>
-      (forksData ?? []).map(({ date, cumulative }) => ({
+      (forksData ?? []).map(({ date, daily, cumulative }) => ({
         date,
-        forks: cumulative,
+        forks: isCumulative ? cumulative : daily,
       })),
-    [forksData],
+    [forksData, isCumulative],
   );
   const filteredData = useDateFiltered(data);
-  const total = filteredData.at(-1)?.forks ?? 0;
+  const total = isCumulative
+    ? (filteredData.at(-1)?.forks ?? 0)
+    : filteredData.reduce((sum, item) => sum + item.forks, 0);
 
   return (
     <Card className="w-full">
@@ -52,10 +57,14 @@ export function ForksChart({
           <CardTitle role="heading" aria-level={2}>
             Forks Over Time
           </CardTitle>
-          <CardDescription>{description}</CardDescription>
+          <CardDescription>
+            {description}, {isCumulative ? "cumulative" : "daily"}
+          </CardDescription>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="text-xs text-muted-foreground">Total Forks</span>
+          <span className="text-xs text-muted-foreground">
+            {isCumulative ? "Total Forks" : "Total Daily Forks"}
+          </span>
           {isLoading ? (
             <Skeleton className="h-6 w-24" />
           ) : (
@@ -84,6 +93,13 @@ export function ForksChart({
           </Chart>
         ) : (
           <NoDataMessage dataType="forks" />
+        )}
+        {(isLoading || filteredData.length > 0) && (
+          <ViewTypeTabs
+            value={viewType}
+            onChange={setViewType}
+            isLoading={isLoading}
+          />
         )}
       </CardContent>
     </Card>

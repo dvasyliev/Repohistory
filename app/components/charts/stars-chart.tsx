@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Area } from "recharts";
 import type { ChartConfig } from "@/app/components/ui/chart";
@@ -20,6 +19,7 @@ import { TrendIndicator } from "./trend-indicator";
 import { useDateRange } from "@/lib/contexts/date-range-context";
 import { NoDataMessage } from "./no-data-message";
 import { ChartCustomTooltip } from "./chart-custom-tooltip";
+import { ViewTypeTabs, type ViewType } from "./view-type-tabs";
 
 interface StarsChartProps {
   starsData?: RepoStarsData;
@@ -36,7 +36,7 @@ const chartConfig = {
 
 export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
   const isOver40kStars = (starsData?.totalStars || 0) > 40000;
-  const [viewType, setViewType] = useState<"cumulative" | "daily">(
+  const [viewType, setViewType] = useState<ViewType>(
     isOver40kStars ? "cumulative" : "daily",
   );
   const { dateRange } = useDateRange();
@@ -240,33 +240,11 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
           <NoDataMessage dataType="stars" />
         )}
         {(isLoading || filteredData.length > 0) && !isOver40kStars && (
-          <div className="mt-6 flex justify-center">
-            <Tabs
-              value={viewType}
-              onValueChange={(value) =>
-                setViewType(value as "cumulative" | "daily")
-              }
-            >
-              <TabsList>
-                <TabsTrigger
-                  value="daily"
-                  className={
-                    isLoading ? "cursor-not-allowed" : "cursor-pointer"
-                  }
-                >
-                  Daily
-                </TabsTrigger>
-                <TabsTrigger
-                  value="cumulative"
-                  className={
-                    isLoading ? "cursor-not-allowed" : "cursor-pointer"
-                  }
-                >
-                  Cumulative
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          <ViewTypeTabs
+            value={viewType}
+            onChange={setViewType}
+            isLoading={isLoading}
+          />
         )}
       </CardContent>
     </Card>
