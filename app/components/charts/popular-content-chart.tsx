@@ -1,19 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Line } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card";
-import type { ChartConfig } from "@/app/components/ui/chart";
-import { Chart } from "./chart";
-import { useDateRange } from "@/lib/contexts/date-range-context";
-import { NoDataMessage } from "./no-data-message";
-import { hasNonZero } from "@/lib/chart-empty";
+import { latestSnapshot } from "@/lib/repo/latest-snapshot";
+import { TopListCard } from "./top-list-card";
 
 interface PopularContentChartProps {
   traffic?: {
@@ -27,125 +16,31 @@ interface PopularContentChartProps {
       }>;
     }>;
   };
-  repositoryName?: string;
   isLoading?: boolean;
 }
-
-const COLORS = [
-  "#62C3F8",
-  "#62f888",
-  "#b5f862",
-  "#f8d862",
-  "#f88d62",
-  "#f86262",
-  "#f862d3",
-  "#b562f8",
-  "#6278f8",
-];
 
 export function PopularContentChart({
   traffic,
   isLoading = false,
 }: PopularContentChartProps) {
-  const { dateRange } = useDateRange();
-
-  const { data, chartConfig } = useMemo(() => {
-    if (!traffic || !traffic.paths.length) return { data: [], chartConfig: {} };
-
-    // Use all paths
-    const topPaths = traffic.paths;
-
-    // Create a map of dates to path data
-    const dateMap = new Map<string, Record<string, number>>();
-
-    topPaths.forEach((pathItem) => {
-      pathItem.data.forEach((item) => {
-        if (!dateMap.has(item.timestamp)) {
-          dateMap.set(item.timestamp, {});
-        }
-        const dateEntry = dateMap.get(item.timestamp)!;
-        // Use path as the key, but we'll display the title in the legend
-        dateEntry[pathItem.path] = item.count;
-      });
-    });
-
-    // Convert to array format
-    const chartData = Array.from(dateMap.entries())
-      .map(([date, paths]) => ({
-        date,
-        ...paths,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    // Create chart config
-    const config: ChartConfig = {};
-    topPaths.forEach((pathItem, index) => {
-      config[pathItem.path] = {
-        label: pathItem.path,
-        color: COLORS[index % COLORS.length],
-      };
-    });
-
-    return { data: chartData, chartConfig: config };
-  }, [traffic]);
-
-  const filteredData = useMemo(() => {
-    if (!dateRange.from || !dateRange.to) {
-      return data;
-    }
-    return data.filter((item) => {
-      const itemDate = new Date(item.date);
-      return itemDate >= dateRange.from! && itemDate <= dateRange.to!;
-    });
-  }, [data, dateRange]);
-
-  const series = Object.keys(chartConfig);
-  const hasAnyData = hasNonZero(data, series);
-  const showChart = hasNonZero(filteredData, series);
+  const snapshot = useMemo(
+    () =>
+      latestSnapshot(
+        (traffic?.paths ?? []).map(({ path, data }) => ({
+          label: path,
+          data,
+        })),
+      ),
+    [traffic],
+  );
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b">
-        <div className="flex flex-1 flex-col justify-center gap-1">
-          <CardTitle>Popular Content</CardTitle>
-          <CardDescription>
-            Most visited pages in your repo (14d avg)
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="pl-0">
-        {isLoading || (showChart && filteredData.length > 1) ? (
-          <Chart
-            data={isLoading ? [] : filteredData}
-            chartConfig={chartConfig}
-            className="h-64 w-full"
-            hideZeroValues
-            isLoading={isLoading}
-          >
-            {Object.keys(chartConfig).map((path) => (
-              <Line
-                isAnimationActive={false}
-                key={path}
-                dataKey={path}
-                type="monotone"
-                stroke={chartConfig[path].color}
-                strokeWidth={2}
-                dot={false}
-              />
-            ))}
-          </Chart>
-        ) : (
-          <NoDataMessage
-            dataType="popular content"
-            hasAnyData={hasAnyData}
-            message={
-              showChart
-                ? "Come back in a few days to see trends over time"
-                : undefined
-            }
-          />
-        )}
-      </CardContent>
-    </Card>
+    <TopListCard
+      title="Popular Content"
+      dataType="popular content"
+      date={snapshot.date}
+      items={snapshot.items}
+      isLoading={isLoading}
+    />
   );
 }
