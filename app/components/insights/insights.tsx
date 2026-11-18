@@ -8,11 +8,7 @@ import type { CounterHistory } from "@/lib/db/traffic";
 import type { CommitHistory } from "@/lib/repo/github-stats";
 import type { RepoStarsData } from "@/lib/repo/stars";
 import { toCumulativeDays, type DailyCount } from "@/lib/repo/cumulative";
-import {
-  latestValue,
-  sumInRange,
-  type MetricSummary,
-} from "@/lib/repo/metric-summary";
+import { changeInRange, sumInRange } from "@/lib/repo/metric-summary";
 import { chartParser, type ChartId } from "@/lib/chart-param";
 import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { commitSeries } from "@/lib/repo/commit-series";
@@ -74,9 +70,6 @@ const sumDaily = (items: DailyCount[], range: DateRange) =>
     toCumulativeDays(items).map(({ date, daily }) => ({ date, value: daily })),
     range,
   );
-
-const noTrend = (value: number | null): MetricSummary | null =>
-  value === null ? null : { value, trend: null };
 
 function Resolved<T>({
   data,
@@ -209,14 +202,13 @@ export function Insights({ data }: { data: InsightsData }) {
           label="Watchers"
           {...tile("watchers")}
           data={data.counters}
-          summarize={(counters) =>
-            noTrend(
-              latestValue(
-                counters.map(({ date, watchers }) => ({
-                  date,
-                  value: watchers,
-                })),
-              ),
+          summarize={(counters, range) =>
+            changeInRange(
+              counters.map(({ date, watchers }) => ({
+                date,
+                value: watchers,
+              })),
+              range,
             )
           }
         />
