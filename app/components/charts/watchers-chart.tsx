@@ -32,6 +32,9 @@ export function WatchersChart({
   isLoading = false,
 }: WatchersChartProps) {
   const filteredData = useDateFiltered(counters);
+  const firstDate = counters[0]?.date;
+  const tooFewDays =
+    filteredData.length < 2 && hasNonZero(filteredData, ["watchers"]);
 
   return (
     <Card className="w-full">
@@ -54,7 +57,18 @@ export function WatchersChart({
         </div>
       </CardHeader>
       <CardContent className="pl-0">
-        {isLoading || hasNonZero(filteredData, ["watchers"]) ? (
+        {tooFewDays && firstDate ? (
+          <NoDataMessage
+            dataType="watchers"
+            hasAnyData
+            message={`Watchers are tracked from ${new Date(
+              firstDate,
+            ).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}. The chart fills in day by day.`}
+          />
+        ) : isLoading || hasNonZero(filteredData, ["watchers"]) ? (
           <Chart
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
