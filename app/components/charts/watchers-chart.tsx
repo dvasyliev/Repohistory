@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Line } from "recharts";
 import {
   Card,
@@ -15,43 +14,31 @@ import { NoDataMessage } from "./no-data-message";
 import { useDateFiltered } from "./use-date-filtered";
 import type { CounterHistory } from "@/lib/db/traffic";
 
-interface CountersChartProps {
+interface WatchersChartProps {
   counters?: CounterHistory[];
   isLoading?: boolean;
 }
 
 const chartConfig = {
-  stars: { label: "Stars", color: "#62C3F8" },
-  forks: { label: "Forks", color: "#315c72" },
   watchers: { label: "Watchers", color: "#f5a623" },
 } satisfies ChartConfig;
 
 const EMPTY: CounterHistory[] = [];
 
-export function CountersChart({
+export function WatchersChart({
   counters = EMPTY,
   isLoading = false,
-}: CountersChartProps) {
-  const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
+}: WatchersChartProps) {
   const filteredData = useDateFiltered(counters);
-
-  const toggleSeries = (dataKey: string) =>
-    setHiddenSeries((prev) =>
-      prev.includes(dataKey)
-        ? prev.filter((key) => key !== dataKey)
-        : [...prev, dataKey],
-    );
 
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b">
         <div className="flex flex-col justify-center gap-1">
           <CardTitle role="heading" aria-level={2}>
-            Repository Counters
+            Watchers
           </CardTitle>
-          <CardDescription>
-            Daily stars, forks, watchers and open issues
-          </CardDescription>
+          <CardDescription>People watching the repo, by day</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pl-0">
@@ -60,24 +47,18 @@ export function CountersChart({
             data={isLoading ? [] : filteredData}
             chartConfig={chartConfig}
             className="h-64 w-full"
-            onLegendClick={isLoading ? undefined : toggleSeries}
-            hiddenSeries={hiddenSeries}
             isLoading={isLoading}
           >
-            {Object.keys(chartConfig).map((key) => (
-              <Line
-                key={key}
-                isAnimationActive={false}
-                dataKey={key}
-                stroke={`var(--color-${key})`}
-                strokeWidth={2}
-                dot={false}
-                hide={hiddenSeries.includes(key)}
-              />
-            ))}
+            <Line
+              isAnimationActive={false}
+              dataKey="watchers"
+              stroke="var(--color-watchers)"
+              strokeWidth={2}
+              dot={false}
+            />
           </Chart>
         ) : (
-          <NoDataMessage dataType="counters" />
+          <NoDataMessage dataType="watchers" />
         )}
       </CardContent>
     </Card>
