@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
-import { Star } from "lucide-react";
+import { GitFork, Star } from "lucide-react";
 import type { Repo } from "@/lib/types";
 import { Suspense } from "react";
 import { RepoCardContent } from "./repo-card-content";
@@ -19,9 +19,17 @@ export function RepoCard({ repo }: { repo: Repo }) {
           <CardTitle className="truncate text-lg font-semibold">
             {repo.full_name}
           </CardTitle>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Star className="h-4 w-4" />
-            {repo.stargazers_count}
+          <div className="flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1" title="Stars">
+              <Star className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Stars:</span>
+              {repo.stargazers_count}
+            </span>
+            <span className="flex items-center gap-1" title="Forks">
+              <GitFork className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Forks:</span>
+              {repo.forks_count}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
