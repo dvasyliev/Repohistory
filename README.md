@@ -34,7 +34,7 @@ This fork differs from upstream:
 3. Create the database: `npx wrangler d1 create repohistory`, then put its id in `wrangler.jsonc` and in `D1_DATABASE_ID`.
 4. Apply migrations: `npm run db:migrate:remote` (`npm run db:migrate:local` for local dev).
 5. Push the Worker secrets from `.env.local`: `npm run secrets:push` (or `npx wrangler secret put NAME` one by one).
-6. Add the Actions secrets: `APP_ID`, `APP_PRIVATE_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (custom token, Account, D1, Edit only), `D1_DATABASE_ID`. For example `gh secret set APP_ID`.
+6. Add the Actions secrets: `APP_ID`, `APP_PRIVATE_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `D1_API_TOKEN` (custom token, Account, D1, Edit only), `D1_DATABASE_ID`. For example `gh secret set APP_ID`.
 7. Deploy: `npm run deploy`. The custom domain is set in `wrangler.jsonc`.
 8. Optional, import older history from repohistory.com exports: put `views.csv`, `clones.csv`, `popular-content.csv` and `referrers.csv` in `imports/<folder>` (git-ignored), then run `npx tsx scripts/import-csv.ts --repo owner/name --dir imports/<folder>`.
 

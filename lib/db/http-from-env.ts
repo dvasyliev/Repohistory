@@ -12,6 +12,6 @@ export function createHttpDbFromEnv() {
   return createHttpDb({
     accountId: requireEnv("CLOUDFLARE_ACCOUNT_ID"),
     databaseId: requireEnv("D1_DATABASE_ID"),
-    apiToken: requireEnv("CLOUDFLARE_API_TOKEN"),
+    apiToken: requireEnv("D1_API_TOKEN"),
   });
 }
