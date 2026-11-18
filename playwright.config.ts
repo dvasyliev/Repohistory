@@ -18,6 +18,8 @@ const command =
     : `npx ${scripts.dev.replace(/(--port|-p)[ =]\d+/, `$1 ${devPort}`)}`;
 
 export default defineConfig({
+  // next dev compiles each page on its first visit, which can take over 5 s.
+  expect: { timeout: 15_000 },
   testDir: "tests",
   fullyParallel: true,
   // Two specs opening the repo page at once hang the dev server on its first compile of that route.
