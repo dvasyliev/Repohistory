@@ -3,7 +3,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 
 function RepoCardSkeleton() {
   return (
-    <Card className="h-52 w-full gap-2">
+    <Card className="h-60 w-full gap-2">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <Skeleton className="h-7 w-48" />
         <div className="flex items-center gap-1">

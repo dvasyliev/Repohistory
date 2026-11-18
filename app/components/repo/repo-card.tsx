@@ -19,7 +19,7 @@ export function RepoCard({
 }) {
   return (
     <Link href={`/${repo.full_name}`}>
-      <Card className="h-52 w-full cursor-pointer gap-2 transition-all duration-200 hover:bg-accent active:scale-99">
+      <Card className="h-60 w-full cursor-pointer gap-2 transition-all duration-200 hover:bg-accent active:scale-99">
         <CardHeader className="flex flex-col gap-0.5 space-y-0">
           <span className="truncate text-sm text-muted-foreground">
             {repo.full_name.split("/")[0]}
