@@ -1,4 +1,4 @@
-import { asc, inArray } from "drizzle-orm";
+import { asc, gte, inArray, and, sum } from "drizzle-orm";
 import type { Db } from "./client";
 import { clones, paths, referrers, stars, views } from "./schema";
 
@@ -27,6 +27,31 @@ export async function getDailyHistoryForRepos(
     db.select().from(t).where(inArray(t.repoId, ids)).orderBy(asc(t.date)),
   );
   return groupByRepo(rows);
+}
+
+export async function getRecentViewTotals(
+  db: Db,
+  repoIds: number[],
+  since: string,
+): Promise<Map<number, number>> {
+  const totals = new Map<number, number>();
+  const chunks: number[][] = [];
+  for (let i = 0; i < repoIds.length; i += REPO_IDS_PER_QUERY) {
+    chunks.push(repoIds.slice(i, i + REPO_IDS_PER_QUERY));
+  }
+  const results = await Promise.all(
+    chunks.map((ids) =>
+      db
+        .select({ repoId: views.repoId, total: sum(views.total) })
+        .from(views)
+        .where(and(inArray(views.repoId, ids), gte(views.date, since)))
+        .groupBy(views.repoId),
+    ),
+  );
+  for (const rows of results) {
+    for (const { repoId, total } of rows) totals.set(repoId, Number(total));
+  }
+  return totals;
 }
 
 export async function getPathHistoryForRepos(
