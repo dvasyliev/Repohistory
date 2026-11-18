@@ -5,14 +5,12 @@ import { useQueryState } from "nuqs";
 import { StarsChart } from "@/app/components/charts/stars-chart";
 import { ViewChart } from "@/app/components/charts/view-chart";
 import { CloneChart } from "@/app/components/charts/clone-chart";
-import { ReleaseChart } from "@/app/components/charts/release-chart";
 import { ForksChart } from "@/app/components/charts/forks-chart";
 import { WatchersChart } from "@/app/components/charts/watchers-chart";
 import { CommitActivityChart } from "@/app/components/charts/commit-activity-chart";
 import type { DateRange } from "@/lib/contexts/date-range-context";
 import type { CommitWeek, CounterHistory } from "@/lib/db/traffic";
 import type { RepoStarsData } from "@/lib/repo/stars";
-import type { RepoReleaseData } from "@/lib/repo/releases";
 import type { ForkDay } from "@/lib/repo/repo-stats";
 import {
   latestValue,
@@ -33,7 +31,6 @@ export interface RepoInsightsData {
   stars: Promise<RepoStarsData>;
   forks: Promise<ForkDay[]>;
   commits: Promise<CommitWeek[]>;
-  releases: Promise<RepoReleaseData>;
   counters: Promise<CounterHistory[]>;
 }
 
@@ -110,14 +107,6 @@ function SelectedChart({
           </Resolved>
         </Suspense>
       );
-    case "downloads":
-      return (
-        <Suspense fallback={<ReleaseChart isLoading />}>
-          <Resolved data={data.releases}>
-            {(releases) => <ReleaseChart releasesData={releases} />}
-          </Resolved>
-        </Suspense>
-      );
     case "watchers":
       return (
         <Suspense fallback={<WatchersChart isLoading />}>
@@ -138,7 +127,7 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <MetricTile
           label="Views"
           {...tile("views")}
@@ -174,16 +163,6 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
                 value: commits,
               })),
               range,
-            )
-          }
-        />
-        <MetricTile
-          label="Downloads"
-          {...tile("downloads")}
-          data={data.releases}
-          summarize={(releases) =>
-            noTrend(
-              releases.releases.length > 0 ? releases.totalDownloads : null,
             )
           }
         />

@@ -22,14 +22,17 @@ The repo page (`/[owner]/[repo]`) stacks nine charts in one column. The owner ge
 | Stars | stars gained in range | existing Stars Over Time |
 | Forks | forks gained in range | Forks Over Time (with switch) |
 | Commits | commits in range | existing Commit Activity |
-| Downloads | release downloads | existing Release Downloads |
 | Watchers | latest count | watchers line from `repo_counters` |
 
-Desktop shows the 7 tiles in one row where they fit (4 per row on medium screens) and mobile shows 2. A tile with no data shows "—" and stays clickable; its chart shows the existing empty state.
+Desktop shows the 6 tiles in one row (3 per row on medium screens) and mobile shows 2. A tile with no data shows "—" and stays clickable; its chart shows the existing empty state.
 
 ## Open issues removed
 
 The owner does not need open issues (2026-11-18): drop the `open_issues` column from `repo_counters` (its stored data goes too) and stop collecting it in the daily job.
+
+## Downloads removed
+
+GitHub counts only downloads of files attached to releases, and the owner's repos attach none, so the number is always 0. The Downloads tile and the release chart are removed (owner, 2026-11-18).
 
 ## Non-goals
 

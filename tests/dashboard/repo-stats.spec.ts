@@ -1,14 +1,6 @@
 import { expect, test } from "@/tests/fixtures";
 
-const TILES = [
-  "Views",
-  "Clones",
-  "Stars",
-  "Forks",
-  "Commits",
-  "Downloads",
-  "Watchers",
-];
+const TILES = ["Views", "Clones", "Stars", "Forks", "Commits", "Watchers"];
 
 test("switches the big chart from the metric tiles", async ({ page }) => {
   await page.goto("/signin");

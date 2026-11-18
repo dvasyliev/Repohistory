@@ -14,7 +14,6 @@ import { PopularContentChart } from "@/app/components/charts/popular-content-cha
 import { getRepoStars } from "@/lib/repo/stars";
 import { getRepoViews } from "@/lib/repo/views";
 import { getRepoClones } from "@/lib/repo/clones";
-import { getRepoReleases } from "@/lib/repo/releases";
 import {
   getRepoCommitWeeks,
   getRepoCounters,
@@ -63,7 +62,6 @@ export default async function RepoPage({ params }: PageProps) {
     }),
     forks: getRepoForks(db, repoInfo.id),
     commits: getRepoCommitWeeks(db, repoInfo.id),
-    releases: getRepoReleases(octokit, owner, repo),
     counters: getRepoCounters(db, repoInfo.id),
   };
 

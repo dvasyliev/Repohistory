@@ -6,7 +6,6 @@ const CHART_IDS = [
   "stars",
   "forks",
   "commits",
-  "downloads",
   "watchers",
 ] as const;
 
