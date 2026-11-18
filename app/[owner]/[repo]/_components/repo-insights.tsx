@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
 import type { DateRange } from "@/lib/contexts/date-range-context";
 import type { CounterHistory } from "@/lib/db/traffic";
-import type { CommitWeek } from "@/lib/repo/github-stats";
+import type { CommitHistory } from "@/lib/repo/github-stats";
 import type { RepoStarsData } from "@/lib/repo/stars";
 import { toCumulativeDays, type DailyCount } from "@/lib/repo/cumulative";
 import {
@@ -25,33 +25,33 @@ const loading = () => <ChartSkeleton />;
 
 const ViewChart = dynamic(
   () => import("@/app/components/charts/view-chart").then((m) => m.ViewChart),
-  { loading },
+  { loading, ssr: false },
 );
 const CloneChart = dynamic(
   () => import("@/app/components/charts/clone-chart").then((m) => m.CloneChart),
-  { loading },
+  { loading, ssr: false },
 );
 const StarsChart = dynamic(
   () => import("@/app/components/charts/stars-chart").then((m) => m.StarsChart),
-  { loading },
+  { loading, ssr: false },
 );
 const ForksChart = dynamic(
   () => import("@/app/components/charts/forks-chart").then((m) => m.ForksChart),
-  { loading },
+  { loading, ssr: false },
 );
 const CommitActivityChart = dynamic(
   () =>
     import("@/app/components/charts/commit-activity-chart").then(
       (m) => m.CommitActivityChart,
     ),
-  { loading },
+  { loading, ssr: false },
 );
 const WatchersChart = dynamic(
   () =>
     import("@/app/components/charts/watchers-chart").then(
       (m) => m.WatchersChart,
     ),
-  { loading },
+  { loading, ssr: false },
 );
 
 type Traffic = { timestamp: string; count: number; uniques: number };
@@ -61,7 +61,7 @@ export interface RepoInsightsData {
   clones: Promise<{ count: number; uniques: number; clones: Traffic[] }>;
   stars: Promise<RepoStarsData>;
   forks: Promise<DailyCount[]>;
-  commits: Promise<CommitWeek[] | null>;
+  commits: Promise<CommitHistory | null>;
   counters: Promise<CounterHistory[]>;
 }
 
@@ -143,7 +143,7 @@ function SelectedChart({
     case "commits":
       return (
         <ChartSlot name="commits" data={data.commits}>
-          {(weeks) => <CommitActivityChart weeks={weeks} />}
+          {(history) => <CommitActivityChart history={history} />}
         </ChartSlot>
       );
     case "watchers":
@@ -193,12 +193,14 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
           label="Commits"
           {...tile("commits")}
           data={data.commits}
-          summarize={(weeks, range) =>
+          summarize={(history, range) =>
             sumInRange(
-              (weeks ?? []).map(({ week, commits }) => ({
-                date: week,
-                value: commits,
-              })),
+              ((range.from ? history?.days : history?.weeks) ?? []).map(
+                ({ date, commits }) => ({
+                  date,
+                  value: commits,
+                }),
+              ),
               range,
             )
           }

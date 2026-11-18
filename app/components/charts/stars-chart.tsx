@@ -121,24 +121,33 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
                 : "daily"}
           </CardDescription>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="text-xs text-muted-foreground">
-            {isLoading
-              ? "Total Daily Stars"
-              : viewType === "cumulative"
-                ? "Total Stars"
-                : "Total Daily Stars"}
-          </span>
-          {isLoading ? (
-            <Skeleton className="h-6 w-24" />
-          ) : (
-            <div className="flex h-6 items-center gap-2">
-              <TrendIndicator trend={starsTrend} />
-              <span className="text-lg leading-none font-bold sm:text-2xl">
-                {total.toLocaleString()}
-              </span>
-            </div>
+        <div className="flex items-center gap-4">
+          {(isLoading || data.length > 0) && !isOver40kStars && (
+            <ViewTypeTabs
+              value={viewType}
+              onChange={setViewType}
+              isLoading={isLoading}
+            />
           )}
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs text-muted-foreground">
+              {isLoading
+                ? "Total Daily Stars"
+                : viewType === "cumulative"
+                  ? "Total Stars"
+                  : "Total Daily Stars"}
+            </span>
+            {isLoading ? (
+              <Skeleton className="h-6 w-24" />
+            ) : (
+              <div className="flex h-6 items-center gap-2">
+                <TrendIndicator trend={starsTrend} />
+                <span className="text-lg leading-none font-bold sm:text-2xl">
+                  {total.toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pl-0">
@@ -236,13 +245,6 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
           <NoDataMessage
             dataType="stars"
             hasAnyData={hasNonZero(data, ["stars"])}
-          />
-        )}
-        {(isLoading || data.length > 0) && !isOver40kStars && (
-          <ViewTypeTabs
-            value={viewType}
-            onChange={setViewType}
-            isLoading={isLoading}
           />
         )}
       </CardContent>

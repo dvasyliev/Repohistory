@@ -62,17 +62,26 @@ export function ForksChart({
             {description}, {isCumulative ? "cumulative" : "daily"}
           </CardDescription>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="text-xs text-muted-foreground">
-            {isCumulative ? "Total Forks" : "Total Daily Forks"}
-          </span>
-          {isLoading ? (
-            <Skeleton className="h-6 w-24" />
-          ) : (
-            <span className="text-lg leading-none font-bold sm:text-2xl">
-              {total.toLocaleString()}
-            </span>
+        <div className="flex items-center gap-4">
+          {(isLoading || data.length > 0) && (
+            <ViewTypeTabs
+              value={viewType}
+              onChange={setViewType}
+              isLoading={isLoading}
+            />
           )}
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs text-muted-foreground">
+              {isCumulative ? "Total Forks" : "Total Daily Forks"}
+            </span>
+            {isLoading ? (
+              <Skeleton className="h-6 w-24" />
+            ) : (
+              <span className="text-lg leading-none font-bold sm:text-2xl">
+                {total.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pl-0">
@@ -96,13 +105,6 @@ export function ForksChart({
           <NoDataMessage
             dataType="forks"
             hasAnyData={hasNonZero(data, ["forks"])}
-          />
-        )}
-        {(isLoading || data.length > 0) && (
-          <ViewTypeTabs
-            value={viewType}
-            onChange={setViewType}
-            isLoading={isLoading}
           />
         )}
       </CardContent>

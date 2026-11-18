@@ -15,17 +15,15 @@ export function ViewTypeTabs({
 }: ViewTypeTabsProps) {
   const cursor = isLoading ? "cursor-not-allowed" : "cursor-pointer";
   return (
-    <div className="mt-6 flex justify-center">
-      <Tabs value={value} onValueChange={(next) => onChange(next as ViewType)}>
-        <TabsList>
-          <TabsTrigger value="daily" className={cursor}>
-            Daily
-          </TabsTrigger>
-          <TabsTrigger value="cumulative" className={cursor}>
-            Cumulative
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
+    <Tabs value={value} onValueChange={(next) => onChange(next as ViewType)}>
+      <TabsList>
+        <TabsTrigger value="daily" className={cursor}>
+          Daily
+        </TabsTrigger>
+        <TabsTrigger value="cumulative" className={cursor}>
+          Cumulative
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }
