@@ -195,13 +195,17 @@ export function RepoInsights({ data }: { data: RepoInsightsData }) {
           {...tile("commits")}
           data={data.commits}
           summarize={(history, range) =>
-            sumInRange(
-              commitSeries(history, !range.from).map(({ date, commits }) => ({
-                date,
-                value: commits,
-              })),
-              range,
-            )
+            history === null
+              ? "pending"
+              : sumInRange(
+                  commitSeries(history, !range.from).map(
+                    ({ date, commits }) => ({
+                      date,
+                      value: commits,
+                    }),
+                  ),
+                  range,
+                )
           }
         />
         <MetricTile

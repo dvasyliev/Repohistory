@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, use } from "react";
+import { Loader } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { TrendIndicator } from "@/app/components/charts/trend-indicator";
@@ -16,7 +17,7 @@ interface MetricTileProps<T> {
   selected: boolean;
   onSelect: () => void;
   data: Promise<T>;
-  summarize: (data: T, range: DateRange) => MetricSummary | null;
+  summarize: (data: T, range: DateRange) => MetricSummary | null | "pending";
 }
 
 export function MetricTile<T>({
@@ -52,6 +53,14 @@ function TileValue<T>({
 }: Pick<MetricTileProps<T>, "data" | "summarize">) {
   const { dateRange } = useDateRange();
   const summary = summarize(use(data), dateRange);
+  if (summary === "pending") {
+    return (
+      <span className="flex h-7 items-center gap-2 text-sm text-muted-foreground">
+        <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
+        Counting…
+      </span>
+    );
+  }
   return (
     <span className="flex h-7 items-center gap-2">
       <span className="text-xl font-bold sm:text-2xl">

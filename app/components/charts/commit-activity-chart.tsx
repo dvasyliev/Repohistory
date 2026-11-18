@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Loader } from "lucide-react";
 import { Area } from "recharts";
 import {
   Card,
@@ -19,6 +21,8 @@ import { useDateRange } from "@/lib/contexts/date-range-context";
 import { commitSeries } from "@/lib/repo/commit-series";
 import type { CommitHistory } from "@/lib/repo/github-stats";
 
+const RETRY_MS = 10_000;
+
 interface CommitActivityChartProps {
   history?: CommitHistory | null;
   isLoading?: boolean;
@@ -33,6 +37,13 @@ export function CommitActivityChart({
   isLoading = false,
 }: CommitActivityChartProps) {
   const { selectedPeriod } = useDateRange();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (history !== null) return;
+    const timer = setTimeout(() => router.refresh(), RETRY_MS);
+    return () => clearTimeout(timer);
+  }, [history, router]);
   const data = useMemo(
     () => commitSeries(history, selectedPeriod === "all"),
     [history, selectedPeriod],
@@ -68,8 +79,9 @@ export function CommitActivityChart({
       </CardHeader>
       <CardContent className="pl-0">
         {history === null ? (
-          <div className="flex h-64 items-center justify-center text-muted-foreground">
-            GitHub is still counting commits. Reload in a minute.
+          <div className="flex h-64 items-center justify-center gap-2 text-muted-foreground">
+            <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
+            GitHub is counting commits. This updates by itself.
           </div>
         ) : isLoading || hasNonZero(filteredData, ["commits"]) ? (
           <Chart
