@@ -2,6 +2,11 @@ import type { Octokit } from "octokit";
 import { unstable_cache } from "next/cache";
 import type { Db } from "@/lib/db/client";
 import { getStarHistory, type StarHistory } from "@/lib/db/traffic";
+import {
+  toDailyCounts,
+  type CumulativeDay,
+  type DailyCount,
+} from "./cumulative";
 
 export type StarWeek = { week: number; days: number[] };
 
@@ -11,13 +16,7 @@ const DAY_MS = 86_400_000;
 
 export interface RepoStarsData {
   totalStars: number;
-  hasEstimatedData: boolean;
-  starsHistory: Array<{
-    date: string;
-    cumulative: number;
-    daily: number;
-    isEstimated?: boolean;
-  }>;
+  starsHistory: DailyCount[];
 }
 
 const toIsoDate = (ms: number) => new Date(ms).toISOString().split("T")[0];
@@ -59,29 +58,7 @@ export function toDailyStars(weeks: StarWeek[]): Record<string, number> {
   return daily;
 }
 
-export function toCumulativeDays(dailyStars: Record<string, number>) {
-  const dates = Object.keys(dailyStars).sort();
-  if (dates.length === 0) return [];
-
-  const today = toIsoDate(Date.now());
-  const history: RepoStarsData["starsHistory"] = [];
-  let cumulative = 0;
-
-  for (
-    let ms = Date.parse(dates[0]) - DAY_MS;
-    toIsoDate(ms) <= today;
-    ms += DAY_MS
-  ) {
-    const date = toIsoDate(ms);
-    const daily = dailyStars[date] ?? 0;
-    cumulative += daily;
-    history.push({ date, daily, cumulative, isEstimated: false });
-  }
-
-  return history;
-}
-
-function toCumulativeWeeks(weeks: StarWeek[]) {
+function toCumulativeWeeks(weeks: StarWeek[]): CumulativeDay[] {
   let cumulative = 0;
   return [...weeks]
     .sort((a, b) => a.week - b.week)
@@ -98,22 +75,19 @@ export async function getRepoStars(
   stored?: StarHistory[],
 ): Promise<RepoStarsData> {
   const rows = stored ?? (await getStarHistory(db, repo.id));
-  const daily = Object.fromEntries(rows.map((r) => [r.date, r.count]));
   return {
     totalStars: repo.stargazersCount,
-    hasEstimatedData: false,
-    starsHistory: toCumulativeDays(daily),
+    starsHistory: toDailyCounts(rows),
   };
 }
 
 export async function getRepoStarsChart(
   octokit: Octokit,
   repo: { fullName: string; stargazersCount: number },
-): Promise<RepoStarsData> {
+): Promise<{ totalStars: number; starsHistory: CumulativeDay[] }> {
   const weeks = await fetchStarWeeksCached(octokit, repo.fullName);
   return {
     totalStars: repo.stargazersCount,
-    hasEstimatedData: false,
     starsHistory: toCumulativeWeeks(weeks),
   };
 }

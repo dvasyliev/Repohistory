@@ -1,18 +1,13 @@
 "use client";
 
 import { Suspense, use, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
-import { StarsChart } from "@/app/components/charts/stars-chart";
-import { ViewChart } from "@/app/components/charts/view-chart";
-import { CloneChart } from "@/app/components/charts/clone-chart";
-import { ForksChart } from "@/app/components/charts/forks-chart";
-import { WatchersChart } from "@/app/components/charts/watchers-chart";
-import { CommitActivityChart } from "@/app/components/charts/commit-activity-chart";
 import type { DateRange } from "@/lib/contexts/date-range-context";
 import type { CounterHistory } from "@/lib/db/traffic";
 import type { CommitWeek } from "@/lib/repo/github-stats";
 import type { RepoStarsData } from "@/lib/repo/stars";
-import type { ForkDay } from "@/lib/repo/repo-stats";
+import { toCumulativeDays, type DailyCount } from "@/lib/repo/cumulative";
 import {
   latestValue,
   sumInRange,
@@ -24,6 +19,40 @@ import {
 } from "@/app/[owner]/[repo]/_lib/chart-param";
 import { ChartErrorBoundary } from "@/app/components/charts/chart-error-boundary";
 import { MetricTile } from "./metric-tile";
+import { ChartSkeleton } from "./chart-skeleton";
+
+const loading = () => <ChartSkeleton />;
+
+const ViewChart = dynamic(
+  () => import("@/app/components/charts/view-chart").then((m) => m.ViewChart),
+  { loading },
+);
+const CloneChart = dynamic(
+  () => import("@/app/components/charts/clone-chart").then((m) => m.CloneChart),
+  { loading },
+);
+const StarsChart = dynamic(
+  () => import("@/app/components/charts/stars-chart").then((m) => m.StarsChart),
+  { loading },
+);
+const ForksChart = dynamic(
+  () => import("@/app/components/charts/forks-chart").then((m) => m.ForksChart),
+  { loading },
+);
+const CommitActivityChart = dynamic(
+  () =>
+    import("@/app/components/charts/commit-activity-chart").then(
+      (m) => m.CommitActivityChart,
+    ),
+  { loading },
+);
+const WatchersChart = dynamic(
+  () =>
+    import("@/app/components/charts/watchers-chart").then(
+      (m) => m.WatchersChart,
+    ),
+  { loading },
+);
 
 type Traffic = { timestamp: string; count: number; uniques: number };
 
@@ -31,7 +60,7 @@ export interface RepoInsightsData {
   views: Promise<{ count: number; uniques: number; views: Traffic[] }>;
   clones: Promise<{ count: number; uniques: number; clones: Traffic[] }>;
   stars: Promise<RepoStarsData>;
-  forks: Promise<ForkDay[]>;
+  forks: Promise<DailyCount[]>;
   commits: Promise<CommitWeek[] | null>;
   counters: Promise<CounterHistory[]>;
 }
@@ -42,9 +71,9 @@ const sumTraffic = (items: Traffic[], range: DateRange) =>
     range,
   );
 
-const sumDaily = (items: { date: string; daily: number }[], range: DateRange) =>
+const sumDaily = (items: DailyCount[], range: DateRange) =>
   sumInRange(
-    items.map(({ date, daily }) => ({ date, value: daily })),
+    toCumulativeDays(items).map(({ date, daily }) => ({ date, value: daily })),
     range,
   );
 
@@ -64,17 +93,15 @@ function Resolved<T>({
 function ChartSlot<T>({
   name,
   data,
-  loading,
   children,
 }: {
   name: string;
   data: Promise<T>;
-  loading: ReactNode;
   children: (value: T) => ReactNode;
 }) {
   return (
     <ChartErrorBoundary name={name} resetKey={data}>
-      <Suspense fallback={loading}>
+      <Suspense fallback={<ChartSkeleton />}>
         <Resolved data={data}>{children}</Resolved>
       </Suspense>
     </ChartErrorBoundary>
@@ -91,61 +118,37 @@ function SelectedChart({
   switch (chart) {
     case "views":
       return (
-        <ChartSlot
-          name="views"
-          data={data.views}
-          loading={<ViewChart isLoading />}
-        >
+        <ChartSlot name="views" data={data.views}>
           {(views) => <ViewChart traffic={{ views }} />}
         </ChartSlot>
       );
     case "clones":
       return (
-        <ChartSlot
-          name="clones"
-          data={data.clones}
-          loading={<CloneChart isLoading />}
-        >
+        <ChartSlot name="clones" data={data.clones}>
           {(clones) => <CloneChart traffic={{ clones }} />}
         </ChartSlot>
       );
     case "stars":
       return (
-        <ChartSlot
-          name="stars"
-          data={data.stars}
-          loading={<StarsChart isLoading />}
-        >
+        <ChartSlot name="stars" data={data.stars}>
           {(stars) => <StarsChart starsData={stars} />}
         </ChartSlot>
       );
     case "forks":
       return (
-        <ChartSlot
-          name="forks"
-          data={data.forks}
-          loading={<ForksChart isLoading />}
-        >
+        <ChartSlot name="forks" data={data.forks}>
           {(forks) => <ForksChart forksData={forks} />}
         </ChartSlot>
       );
     case "commits":
       return (
-        <ChartSlot
-          name="commits"
-          data={data.commits}
-          loading={<CommitActivityChart isLoading />}
-        >
+        <ChartSlot name="commits" data={data.commits}>
           {(weeks) => <CommitActivityChart weeks={weeks} />}
         </ChartSlot>
       );
     case "watchers":
       return (
-        <ChartSlot
-          name="watchers"
-          data={data.counters}
-          loading={<WatchersChart isLoading />}
-        >
+        <ChartSlot name="watchers" data={data.counters}>
           {(counters) => <WatchersChart counters={counters} />}
         </ChartSlot>
       );

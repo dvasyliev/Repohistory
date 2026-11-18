@@ -2,7 +2,8 @@ import { cache } from "react";
 import type { Db } from "@/lib/db/client";
 import { getDailyCountTotals } from "@/lib/db/traffic";
 import type { Repo } from "@/lib/types";
-import { toCumulativeDays, type RepoStarsData } from "./stars";
+import { toDailyCounts } from "./cumulative";
+import type { RepoStarsData } from "./stars";
 
 export const getOwnerStars = cache(
   async (db: Db, repos: Repo[]): Promise<RepoStarsData> => {
@@ -17,10 +18,7 @@ export const getOwnerStars = cache(
     );
     return {
       totalStars,
-      hasEstimatedData: false,
-      starsHistory: toCumulativeDays(
-        Object.fromEntries(totals.map(({ date, count }) => [date, count])),
-      ),
+      starsHistory: toDailyCounts(totals),
     };
   },
 );

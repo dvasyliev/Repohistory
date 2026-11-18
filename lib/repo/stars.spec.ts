@@ -38,24 +38,19 @@ describe("toDailyStars", () => {
 describe("getRepoStars", () => {
   const repo = { id: 1, fullName: "a/b", stargazersCount: 3 };
 
-  it("builds a cumulative daily series from the first stored day", async () => {
+  it("sends the stored daily counts and the live total", async () => {
     const result = await getRepoStars(db, repo, [
       { date: "2026-11-03", count: 2 },
       { date: "2026-11-09", count: 1 },
     ]);
 
-    expect(result.totalStars).toBe(3);
-    expect(result.hasEstimatedData).toBe(false);
-    expect(result.starsHistory[0]).toMatchObject({
-      date: "2026-11-02",
-      cumulative: 0,
+    expect(result).toEqual({
+      totalStars: 3,
+      starsHistory: [
+        { date: "2026-11-03", daily: 2 },
+        { date: "2026-11-09", daily: 1 },
+      ],
     });
-    expect(
-      result.starsHistory.find((d) => d.date === "2026-11-03"),
-    ).toMatchObject({ daily: 2, cumulative: 2 });
-    expect(
-      result.starsHistory.find((d) => d.date === "2026-11-09"),
-    ).toMatchObject({ daily: 1, cumulative: 3 });
   });
 
   it("reads the repo's rows when none are passed", async () => {

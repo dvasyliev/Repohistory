@@ -14,6 +14,7 @@ import type { ChartConfig } from "@/app/components/ui/chart";
 import { ChartTooltip } from "@/app/components/ui/chart";
 import { Chart } from "./chart";
 import type { RepoStarsData } from "@/lib/repo/stars";
+import { toCumulativeDays } from "@/lib/repo/cumulative";
 import { calculateTrendPercentage } from "@/lib/chart-trends";
 import { TrendIndicator } from "./trend-indicator";
 import { useDateRange } from "@/lib/contexts/date-range-context";
@@ -43,18 +44,17 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
 
   const data = useMemo(() => {
     if (!starsData) return [];
-    return starsData.starsHistory.map((item, index, array) => {
+    const history = toCumulativeDays(starsData.starsHistory);
+    return history.map((item, index, array) => {
       const stars = viewType === "cumulative" ? item.cumulative : item.daily;
       const result: {
         date: string;
         stars: number;
-        isEstimated?: boolean;
         solidStars?: number;
         dashedStars?: number;
       } = {
         date: item.date,
         stars,
-        isEstimated: item.isEstimated,
       };
 
       if (index < array.length - 1) {
@@ -168,15 +168,10 @@ export function StarsChart({ starsData, isLoading = false }: StarsChartProps) {
               <ChartTooltip
                 cursor={false}
                 content={({ active, payload, label }) => {
-                  // Find the original data point to get isEstimated info
-                  const originalDataPoint = filteredData.find(
-                    (item) => item.date === label,
-                  );
                   const enhancedPayload = payload?.map(
                     (p: { dataKey?: unknown; value?: unknown }) => ({
                       dataKey: typeof p.dataKey === "string" ? p.dataKey : "",
                       value: typeof p.value === "number" ? p.value : undefined,
-                      payload: { isEstimated: originalDataPoint?.isEstimated },
                     }),
                   );
 

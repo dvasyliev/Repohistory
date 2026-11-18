@@ -1,7 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 export interface DateRange {
   from: Date | null;
@@ -78,21 +85,30 @@ export function DateRangeProvider({
     setSelectedPeriod(period);
   }, [fullName]);
 
-  const handleSetSelectedPeriod = (period: string) => {
-    setSelectedPeriod(period);
-    saveToLocalStorage(fullName, period);
-  };
+  const handleSetSelectedPeriod = useCallback(
+    (period: string) => {
+      setSelectedPeriod(period);
+      saveToLocalStorage(fullName, period);
+    },
+    [fullName],
+  );
 
-  const dateRange = calculateDateRangeFromPeriod(selectedPeriod);
+  const dateRange = useMemo(
+    () => calculateDateRangeFromPeriod(selectedPeriod),
+    [selectedPeriod],
+  );
+
+  const value = useMemo(
+    () => ({
+      selectedPeriod,
+      setSelectedPeriod: handleSetSelectedPeriod,
+      dateRange,
+    }),
+    [selectedPeriod, handleSetSelectedPeriod, dateRange],
+  );
 
   return (
-    <DateRangeContext.Provider
-      value={{
-        selectedPeriod,
-        setSelectedPeriod: handleSetSelectedPeriod,
-        dateRange,
-      }}
-    >
+    <DateRangeContext.Provider value={value}>
       {children}
     </DateRangeContext.Provider>
   );

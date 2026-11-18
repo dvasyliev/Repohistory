@@ -10,34 +10,24 @@ import { fetchCommitWeeks, type CommitWeek } from "@/lib/repo/github-stats";
 import type { Repo } from "@/lib/types";
 import { dailyCache } from "@/lib/daily-cache";
 import { getOctokitForInstallation } from "@/lib/octokit/installation";
-import { toCumulativeDays } from "./stars";
+import { toDailyCounts, type DailyCount } from "./cumulative";
 
-export type ForkDay = { date: string; daily: number; cumulative: number };
-
-function toForkDays(daily: Record<string, number>): ForkDay[] {
-  return toCumulativeDays(daily).map(({ date, daily, cumulative }) => ({
-    date,
-    daily,
-    cumulative,
-  }));
-}
-
-export async function getRepoForks(db: Db, repoId: number): Promise<ForkDay[]> {
+export async function getRepoForks(
+  db: Db,
+  repoId: number,
+): Promise<DailyCount[]> {
   const byRepo = await getForkHistoryForRepos(db, [repoId]);
-  const rows = byRepo.get(repoId) ?? [];
-  return toForkDays(Object.fromEntries(rows.map((r) => [r.date, r.count])));
+  return toDailyCounts(byRepo.get(repoId) ?? []);
 }
 
 export const getOwnerForks = cache(
-  async (db: Db, repos: Repo[]): Promise<ForkDay[]> => {
+  async (db: Db, repos: Repo[]): Promise<DailyCount[]> => {
     const totals = await getDailyCountTotals(
       db,
       "forks",
       repos.map((repo) => repo.id),
     );
-    return toForkDays(
-      Object.fromEntries(totals.map(({ date, count }) => [date, count])),
-    );
+    return toDailyCounts(totals);
   },
 );
 

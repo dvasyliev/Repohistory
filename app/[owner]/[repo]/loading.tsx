@@ -1,9 +1,7 @@
 import { DateRangeProvider } from "@/lib/contexts/date-range-context";
 import { Navbar } from "@/app/components/layout/navbar";
 import { Skeleton } from "@/app/components/ui/skeleton";
-import { ViewChart } from "@/app/components/charts/view-chart";
-import { ReferrersChart } from "@/app/components/charts/referrers-chart";
-import { PopularContentChart } from "@/app/components/charts/popular-content-chart";
+import { ChartSkeleton } from "./_components/chart-skeleton";
 
 const TILES = ["Views", "Clones", "Stars", "Forks", "Commits", "Watchers"];
 
@@ -25,11 +23,11 @@ export default function RepoLoading() {
                 </div>
               ))}
             </div>
-            <ViewChart isLoading />
+            <ChartSkeleton />
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ReferrersChart isLoading />
-            <PopularContentChart isLoading />
+            <ChartSkeleton />
+            <ChartSkeleton />
           </div>
         </div>
       </div>

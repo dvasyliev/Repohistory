@@ -15,10 +15,10 @@ import { Chart } from "./chart";
 import { NoDataMessage } from "./no-data-message";
 import { useDateFiltered } from "./use-date-filtered";
 import { ViewTypeTabs, type ViewType } from "./view-type-tabs";
-import type { ForkDay } from "@/lib/repo/repo-stats";
+import { toCumulativeDays, type DailyCount } from "@/lib/repo/cumulative";
 
 interface ForksChartProps {
-  forksData?: ForkDay[];
+  forksData?: DailyCount[];
   isLoading?: boolean;
   description?: string;
 }
@@ -39,7 +39,7 @@ export function ForksChart({
   const isCumulative = viewType === "cumulative";
   const data = useMemo(
     () =>
-      (forksData ?? []).map(({ date, daily, cumulative }) => ({
+      toCumulativeDays(forksData ?? []).map(({ date, daily, cumulative }) => ({
         date,
         forks: isCumulative ? cumulative : daily,
       })),

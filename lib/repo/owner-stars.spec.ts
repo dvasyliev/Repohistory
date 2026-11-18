@@ -8,7 +8,7 @@ const day = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().split("T")[0];
 
 describe("getOwnerStars", () => {
-  it("sums the repos' new stars per day into one cumulative series", async () => {
+  it("sums the repos' new stars per day", async () => {
     const db = createTestDb();
     await db.insert(stars).values([
       { repoId: 1, date: day(2), count: 2 },
@@ -22,12 +22,9 @@ describe("getOwnerStars", () => {
 
     expect(await getOwnerStars(db, repos)).toEqual({
       totalStars: 7,
-      hasEstimatedData: false,
       starsHistory: [
-        { date: day(3), daily: 0, cumulative: 0, isEstimated: false },
-        { date: day(2), daily: 3, cumulative: 3, isEstimated: false },
-        { date: day(1), daily: 0, cumulative: 3, isEstimated: false },
-        { date: day(0), daily: 4, cumulative: 7, isEstimated: false },
+        { date: day(2), daily: 3 },
+        { date: day(0), daily: 4 },
       ],
     });
   });

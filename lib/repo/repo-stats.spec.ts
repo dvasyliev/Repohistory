@@ -38,7 +38,7 @@ import {
 const db = {} as Db;
 
 describe("getRepoForks", () => {
-  it("builds a cumulative series from the day before the first fork", async () => {
+  it("sends the repo's daily fork counts", async () => {
     getForkHistoryForRepos.mockResolvedValue(
       new Map([
         [
@@ -50,16 +50,10 @@ describe("getRepoForks", () => {
         ],
       ]),
     );
-    const result = await getRepoForks(db, 1);
-    expect(result[0]).toMatchObject({ date: "2026-10-31", cumulative: 0 });
-    expect(result.find((d) => d.date === "2026-11-01")).toMatchObject({
-      daily: 2,
-      cumulative: 2,
-    });
-    expect(result.find((d) => d.date === "2026-11-03")).toMatchObject({
-      daily: 1,
-      cumulative: 3,
-    });
+    expect(await getRepoForks(db, 1)).toEqual([
+      { date: "2026-11-01", daily: 2 },
+      { date: "2026-11-03", daily: 1 },
+    ]);
   });
 
   it("gives an empty series when there are no rows", async () => {
@@ -74,20 +68,15 @@ describe("getRepoForks", () => {
 });
 
 describe("getOwnerForks", () => {
-  it("builds the series from the forks summed per day", async () => {
+  it("sends the forks summed per day", async () => {
     getDailyCountTotals.mockResolvedValue([
       { date: "2026-11-01", count: 3 },
       { date: "2026-11-02", count: 4 },
     ]);
-    const result = await getOwnerForks(db, [{ id: 1 }, { id: 2 }] as Repo[]);
-    expect(result.find((d) => d.date === "2026-11-01")).toMatchObject({
-      daily: 3,
-      cumulative: 3,
-    });
-    expect(result.find((d) => d.date === "2026-11-02")).toMatchObject({
-      daily: 4,
-      cumulative: 7,
-    });
+    expect(await getOwnerForks(db, [{ id: 1 }, { id: 2 }] as Repo[])).toEqual([
+      { date: "2026-11-01", daily: 3 },
+      { date: "2026-11-02", daily: 4 },
+    ]);
   });
 
   it("throws when the D1 read fails", async () => {
