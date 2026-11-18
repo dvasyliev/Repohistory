@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/app/components/ui/sonner";
 import { RevalidateOnFocus } from "@/app/components/layout/revalidate-on-focus";
 import "./globals.css";
@@ -227,9 +228,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} dark antialiased`}
       >
-        <RevalidateOnFocus />
-        {children}
-        <Toaster />
+        <NuqsAdapter>
+          <RevalidateOnFocus />
+          {children}
+          <Toaster />
+        </NuqsAdapter>
       </body>
     </html>
   );
