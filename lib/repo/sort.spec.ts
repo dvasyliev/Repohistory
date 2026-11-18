@@ -23,8 +23,8 @@ const keys: RepoSortKeys[] = [
 
 describe("parseRepoSort", () => {
   it("falls back to stars for unknown or missing values", () => {
-    expect(parseRepoSort("bogus")).toBe("stars");
-    expect(parseRepoSort(null)).toBe("stars");
+    expect(parseRepoSort("bogus")).toBe("views");
+    expect(parseRepoSort(null)).toBe("views");
   });
 
   it("accepts every known key", () => {

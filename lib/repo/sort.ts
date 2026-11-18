@@ -18,7 +18,7 @@ export type RepoSortKeys = {
 };
 
 export function parseRepoSort(value: string | null): RepoSort {
-  return REPO_SORTS.find((sort) => sort === value) ?? "stars";
+  return REPO_SORTS.find((sort) => sort === value) ?? "views";
 }
 
 function compareNames(a: RepoSortKeys, b: RepoSortKeys): number {
